@@ -98,6 +98,58 @@ Total basepairs processed: 10,941,141,407 bp
 Total written (filtered):  4,440,167,368 bp (40.6%)
 ```
 
+## 3.4 Quality filtering
+
+We can further filter the remaining reads on several quality parameters using VSEARCH, including minimum length, maximum length, maximum expected errors, and maximum number of ambiguous bases. Prior to quality filtering, rename sequence headers to include sample ID and merge all files.
+
+```{code-block} bash
+mkdir 3.renamed 4.combined
+for fq in 2.demultiplex/*.fastq
+do
+relabel=${fq/2.demultiplex\//}
+vsearch --fastq_filter ${fq} --fastqout ${fq/2.demultiplex/3.renamed/} --relabel ${relabel/.fastq/}.
+done
+cat 3.renamed/*.fastq > 4.combined/ethanol_comparison_heDNA_combined.fastq
+```
+
+After renaming the sequence ID's for each file and all samples merged, we can check the quality and amplicon size range using FastQC. This will be essential to set the minimum and maximum read length thresholds during quality filtering.
+
+```{code-block} bash
+mkdir 5.fastqc_pre_filter
+fastqc 4.combined/ethanol_comparison_heDNA_combined.fastq -o 5.fastqc_pre_filter
+```
+
+![FastQC - Pre-Filter](figures/fastqc_pre_filter.png)
+
+```{code-block} bash
+mkdir 6.filtered
+vsearch --fastq_filter 4.combined/ethanol_comparison_heDNA_combined.fastq --fastq_maxee 1.0 --fastq_minlen 194 --fastq_maxlen 214 --fastq_maxns 0 --fastqout 6.filtered/ethanol_comparison_heDNA_combined_filtered.fastq --fastaout 6.filtered/ethanol_comparison_heDNA_combined_filtered.fasta
+```
+
+```{admonition}
+vsearch v2.16.0_macos_aarch64, 16.0GB RAM, 8 cores
+https://github.com/torognes/vsearch
+Reading input file 100%  
+20363664 sequences kept (of which 0 truncated), 3724301 sequences discarded.
+```
+
+After quality filtering, we can run FastQC again to check if quality filtering was successful.
+
+```{code-block} bash
+mkdir 7.fastqc_post_filter
+fastqc 6.filtered/ethanol_comparison_heDNA_combined_filtered.fastq -o 7.fastqc_post_filter
+```
+
+![FastQC - Post-Filter](figures/fastqc_post_filter.png)
+
+### 3.5 Dereplication
+
+We will now use the fasta file to dereeplicate the data using VSEARCH, i.e., find unique sequences.
+
+```{code-block} bash
+
+```
+
 ## 4. Figure 1: Map of Antarctica
 
 The first figure of the manuscript is a map of Antarctica displaying the locations of the three specimens which were analysed in this experiment. To generate the map, we can run the R script below. To successfully execute the script, several files will need to be downloaded, including:
