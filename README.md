@@ -147,7 +147,91 @@ fastqc 6.filtered/ethanol_comparison_heDNA_combined_filtered.fastq -o 7.fastqc_p
 We will now use the fasta file to dereeplicate the data using VSEARCH, i.e., find unique sequences.
 
 ```{code-block} bash
+mkdir 8.dereplication
+vsearch --derep_fulllength 6.filtered/ethanol_comparison_heDNA_combined_filtered.fasta --relabel uniq. --output 8.dereplication/ethanol_comparison_heDNA_combined_filtered_derep.fasta --sizeout
+```
 
+```{admonition}
+vsearch v2.16.0_macos_aarch64, 16.0GB RAM, 8 cores
+https://github.com/torognes/vsearch
+Dereplicating file 6.filtered/ethanol_comparison_heDNA_combined_filtered.fasta 100%  
+4114456709 nt in 20363664 seqs, min 194, max 214, avg 202
+Sorting 100%
+2749957 unique sequences, avg cluster 7.4, median 1, max 1666279
+Writing output file 100% 
+```
+
+### 3.6 Denoising
+
+Using the unique sequence file, we will denoise the dataset using VSEARCH.
+
+```{code-block} bash
+mkdir 9.denoised
+vsearch --cluster_unoise 8.dereplication/ethanol_comparison_heDNA_combined_filtered_derep.fasta --sizein --sizeout --relabel denoised. --centroids 9.denoised/ethanol_comparison_heDNA_combined_filtered_derep_denoised.fasta
+```
+
+```{admonition}
+vsearch v2.16.0_macos_aarch64, 16.0GB RAM, 8 cores
+https://github.com/torognes/vsearch
+Reading file 8.dereplication/ethanol_comparison_heDNA_combined_filtered_derep.fasta 100%  
+23696444 nt in 117334 seqs, min 194, max 214, avg 202
+minsize 8: 2632623 sequences discarded.
+Masking 100% 
+Sorting by abundance 100%
+Counting k-mers 100% 
+Clustering 100%  
+Sorting clusters 100%
+Writing clusters 100% 
+Clusters: 448 Size min 8, max 3894170, avg 261.9
+Singletons: 0, 0.0% of seqs, 0.0% of clusters
+```
+
+### 3.7 Chimera removal
+
+Unlike USEARCH, VSEARCH does not automatically remove chimeric sequences during denoising. Hence, we need to execute the following code to accomplish this.
+
+```{code-block} bash
+mkdir 10.final
+vsearch --uchime3_denovo 9.denoised/ethanol_comparison_heDNA_combined_filtered_derep_denoised.fasta --sizein --nonchimeras 10.final/ethanol_comparison_heDNA_asvs.fasta --relabel asv.
+```
+
+```{admonition}
+vsearch v2.16.0_macos_aarch64, 16.0GB RAM, 8 cores
+https://github.com/torognes/vsearch
+Reading file 9.denoised/ethanol_comparison_heDNA_combined_filtered_derep_denoised.fasta 100%  
+90837 nt in 448 seqs, min 194, max 214, avg 203
+Masking 100% 
+Sorting by abundance 100%
+Counting k-mers 100% 
+Detecting chimeras 100%  
+Found 339 (75.7%) chimeras, 109 (24.3%) non-chimeras,
+and 0 (0.0%) borderline sequences in 448 unique sequences.
+Taking abundance information into account, this corresponds to
+44769 (0.3%) chimeras, 16737833 (99.7%) non-chimeras,
+and 0 (0.0%) borderline sequences in 16782602 total sequences.
+```
+
+We now have created the ASVs for this project.
+
+### 3.8 Count table
+
+Now that we have created the ASVs, we can generate the count table using VSEARCH.
+
+```{code-block} bash
+vsearch --usearch_global 6.filtered/ethanol_comparison_heDNA_combined_filtered.fasta --db 10.final/ethanol_comparison_heDNA_asvs.fasta --strand plus --id 0.97 --otutabout 10.final/ethanol_comparison_heDNA_table.txt
+```
+
+```{admonition}
+vsearch v2.16.0_macos_aarch64, 16.0GB RAM, 8 cores
+https://github.com/torognes/vsearch
+Reading file 10.final/ethanol_comparison_heDNA_asvs.fasta 100%  
+22007 nt in 109 seqs, min 194, max 214, avg 202
+Masking 100% 
+Counting k-mers 100% 
+Creating k-mer index 100% 
+Searching 100%  
+Matching unique query sequences: 20247244 of 20363664 (99.43%)
+Writing OTU table (classic) 100%  
 ```
 
 ## 4. Figure 1: Map of Antarctica
