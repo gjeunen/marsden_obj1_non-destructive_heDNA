@@ -73,6 +73,31 @@ mkdir 1.fastqc_raw
 fastqc ethanol_comparison_heDNA.fastq -o 1.fastqc_raw
 ```
 
+![FastQC - Raw](figures/fastqc_raw.png)
+
+## 3.3 Demultiplexing
+
+Once quality is checked, we can assign sequences to their respective samples, i.e., demultiplexing. For this step, we will use cutadapt. At the same time as removing the barcodes from the amplicon, we will remove primer-binding regions as well, by setting the "adapter" to the barcode sequence + primer sequence.
+
+```{code-block} bash
+mkdir 2.demultiplex
+cutadapt ethanol_comparison_heDNA.fastq -g file:'ethanol_comparison_heDNA_metadata.fasta' -o 2.demultiplex/{name}.fastq --discard-untrimmed --no-indels -e 0 --cores=0
+```
+
+```{admonition}
+=== Summary ===
+
+Total reads processed:              36,349,307
+Reads with adapters:                24,149,058 (66.4%)
+
+== Read fate breakdown ==
+Reads discarded as untrimmed:       12,200,249 (33.6%)
+Reads written (passing filters):    24,149,058 (66.4%)
+
+Total basepairs processed: 10,941,141,407 bp
+Total written (filtered):  4,440,167,368 bp (40.6%)
+```
+
 ## 4. Figure 1: Map of Antarctica
 
 The first figure of the manuscript is a map of Antarctica displaying the locations of the three specimens which were analysed in this experiment. To generate the map, we can run the R script below. To successfully execute the script, several files will need to be downloaded, including:
