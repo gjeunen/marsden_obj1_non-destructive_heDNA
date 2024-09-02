@@ -623,7 +623,7 @@ Once these numbers have been generated, we can remove the intermediary files to 
 rm -r 1.fastqc_raw 2.demultiplex 3.renamed 4.combined 5.fastqc_pre_filter 6.filtered 7.fastqc_post_filter 8.dereplication 9.denoised ethanol_comparison_heDNA.fastq
 ```
 
-## 6. Figure 1: Map of Antarctica
+## 7. Figure 1: Map of Antarctica
 
 The first figure of the manuscript is a map of Antarctica displaying the locations of the three specimens which were analysed in this experiment. To generate the map, we can run the R script below. To successfully execute the script, several files will need to be downloaded, including:
 
@@ -718,4 +718,4 @@ RSR_plot + annotation_custom(ggplotGrob(inset_map), xmin = xmx - (xmx-xmn)/3, xm
 dev.off() 
 ```
 
-## 7. Figure 2: DNA concentration and purity comparison
+## 8. Figure 2: DNA concentration and purity comparison
