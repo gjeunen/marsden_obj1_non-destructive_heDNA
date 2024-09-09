@@ -238,7 +238,7 @@ Writing OTU table (classic) 100%
 
 ### 4.1 Reference database
 
-For taxonomy assignment, we will generate a high-quality local reference database using CRABS. First, we will download the NCBI taxonomy information.
+For taxonomy assignment, we will generate a high-quality local reference database using [CRABS v0.1.9](https://github.com/gjeunen/reference_database_creator). First, we will download the NCBI taxonomy information.
 
 ```{code-block} bash
 mkdir 11.reference_db
@@ -252,13 +252,103 @@ Next, we will download data from three online repositories, including the MiFish
 crabs db_download -s mitofish -o mitofish.fasta
 crabs db_download -s embl -db 'VRT*' --output embl_vrt.fasta
 crabs db_download -s embl -db 'MAM*' --output embl_mam.fasta
-crabs db_download -s ncbi -db nucleotide
+crabs db_download -s ncbi -db nucleotide -q '16S[All Fields] AND (animals[filter] AND ("1"[SLEN] : "50000"[SLEN]))' -o ncbi16S.fasta -e gjeunen@gmail.com
 ```
 
 Once downloaded, we merge the different output files into a single file.
 
 ```{code-block} bash
+crabs db_merge -o merged_db.fasta -u yes -i ncbi16S.fasta mitofish.fasta embl_vrt.fasta embl_mam.fasta
+```
 
+We can then extract the amplicons through *in silico* PCR.
+
+```{code-block} bash
+crabs insilico_pcr -i merged_db.fasta -o insilico.fasta -f GACCCTATGGAGCTTTAGAC -r CGCTGTTATCCCTADRGTAACT
+```
+
+To retrieve amplicons without primer-binding regions, we can run the pairwise global alignment.
+
+```{code-block} bash
+crabs pga -i merged_db.fasta -o pga.fasta -db insilico.fasta -f GACCCTATGGAGCTTTAGAC -r CGCTGTTATCCCTADRGTAACT
+```
+
+Before filtering the reference database, we need to assign a taxonomic ID to each sequence.
+
+```{code-block} bash
+crabs assign_tax -i pga.fasta -o taxonomy.tsv -a nucl_gb.accession2taxid -t nodes.dmp -n names.dmp -w yes
+```
+
+First, we can dereplicate the database.
+
+```{code-block} bash
+crabs dereplicate -i taxonomy.tsv -o dereplicate.tsv -m uniq_species
+```
+
+We can now clean the database up through various parameters.
+
+```{code-block} bash
+crabs seq_cleanup -i dereplicate.tsv -o clean.tsv -e yes -s yes -na 1
+```
+
+Before exporting to NCBI format (currently not supported in CRABS v0.1.9), we will first export the reference database to SINTAX format.
+
+```{code-block} bash
+crabs tax_format -i clean.tsv -o sintax.fasta -f sintax
+```
+
+To start formatting the reference database to BLAST format, we can execute the python code below.
+
+```{code-block} python
+#! /usr/bin/env python3
+
+import sys
+
+inputFile = sys.argv[1]
+outputFile = sys.argv[2]
+
+newDict = {}
+
+with open(inputFile, 'r') as infile:
+  for line in infile:
+    if line.startswith('>'):
+      seqID = line.split(';')[0] + '\n'
+      if 'CRABS_' in seqID:
+        seqID = seqID.split(':')[0] + '\n'
+    else:
+      newDict[seqID] = line
+
+with open(outputFile, 'w') as outfile:
+  for k, v in newDict.items():
+    _ = outfile.write(k)
+    _ = outfile.write(v)
+```
+
+To add in the taxonomy information to the BLAST database, we can run the following code. First, we need to generate a taxonomic ID map, linking taxonomic IDs to Accession Numbers.
+
+```{code-block} bash
+tail -n +2 nucl_gb.accession2taxid | awk '{print $1, $3}' > taxIDmap.txt
+```
+
+Second, we need to download the taxonomic NCBI database.
+
+```{code-block} bash
+wget ftp://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz
+tar -xvf taxdb.tar.gz
+```
+
+Finally, we can run the `makeblastdb` command, which is part of the BLAST+ Command Line Application.
+
+```{code-block} bash
+makeblastdb -in blast.fasta -dbtype nucl -parse_seqids -out blastDBCOI -taxid_map taxIDmap.txt
+```
+
+### 4.2 Assign taxonomy using blastn
+
+Once the local reference database is generated, we can assign a taxonomic ID to each ASV by conducting a local blastn search.
+
+```{code-block} bash
+blastn -query ethanol_comparison_heDNA_asvs.fasta -db blastDBCOI -max_target_seqs 100 -perc_identity 50 -qcov_hsp_perc 50 -outfmt "6 qaccver saccver staxid sscinames length pident mismatch qcovs evalue bitscore qstart qend sstart send gapopen" -out blastn_taxonomy.txt
 ```
 
 ## 5. *tombRaider* data curation
