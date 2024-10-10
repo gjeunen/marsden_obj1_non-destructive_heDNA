@@ -351,9 +351,214 @@ Once the local reference database is generated, we can assign a taxonomic ID to 
 blastn -query ethanol_comparison_heDNA_asvs.fasta -db blastDBCOI -max_target_seqs 100 -perc_identity 50 -qcov_hsp_perc 50 -outfmt "6 qaccver saccver staxid sscinames length pident mismatch qcovs evalue bitscore qstart qend sstart send gapopen" -out blastn_taxonomy.txt
 ```
 
-## 5. *tombRaider* data curation
+## 5. Data curation
 
-Once we have the three output files from the bioinformatic analysis and taxonomy assignment (1. ASV table: "ethanol_comparison_heDNA_table.txt"; 2. ASV fasta file: "ethanol_comparison_heDNA_asvs.fasta", 3. taxonomy assignment file: "ethanol_comparison_heDNA_asvs.fasta.nt.blastn"), we can further curate the data using [tombRaider v1.0](https://github.com/gjeunen/tombRaider). This step will attempt to remove all artefacts from the data before we conduct the statistical analysis.
+### 5.1 *tombRaider*
+
+After generating the three output files from the bioinformatic analysis and taxonomy assignment (1. ASV table: "ethanol_comparison_heDNA_table.txt"; 2. ASV fasta file: "ethanol_comparison_heDNA_asvs.fasta", 3. taxonomy assignment file: "blastn_taxonomy.txt"), we can further curate the data using [tombRaider v1.0](https://github.com/gjeunen/tombRaider). This step will attempt to remove all artefacts from the data before we conduct the statistical analysis.
+
+```{code-block} bash
+cd ../
+tombRaider --criteria 'taxID;seqSim;coOccur' --frequency-input 10.final/ethanol_comparison_heDNA_table.txt --sequence-input 10.final/ethanol_comparison_heDNA_asvs.fasta --taxonomy-input 10.final/blastn_taxonomy.txt --frequency-output 10.final/tombRaider_ethanol_comparison_heDNA_table.txt --sequence-output 10.final/tombRaider_ethanol_comparison_heDNA_asvs.fasta --taxonomy-output 10.final/tombRaider_blastn_taxonomy.txt --log 10.final/tombRaider_log.txt --detection-threshold 5 --sort 'total read count' --similarity 50 --pairwise-alignment global --blast-format '6 qaccver saccver staxid sscinames length pident mismatch qcovs evalue bitscore qstart qend sstart send gapopen' --taxon-quality --occurrence-ratio 'count;2' --occurrence-type 'presence-absence'
+```
+
+```{admonition}
+/// tombRaider | v1.0
+
+|   Included Criteria | taxid, seqsim, cooccur
+|   Excluded Criteria | pseudogene
+|       Reading Files | ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00 0:00:00
+|  Identify artefacts | ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00 0:00:18
+|  Summary Statistics | 
+|     Total # of ASVs | 109
+|Total # of Artefacts | 54 (49.54%)
+|       Artefact List | 
+|    parent:    asv.2 | children:   asv.63, asv.103, asv.64, asv.66, asv.97, asv.73, asv.76, asv.90, asv.108, asv.99, asv.82, asv.104, asv.105, asv.101, asv.102
+|    parent:    asv.4 | children:   asv.93, asv.94, asv.88
+|    parent:    asv.6 | child:      asv.26
+|    parent:    asv.7 | children:   asv.72, asv.81, asv.68, asv.109, asv.55, asv.58, asv.70
+|    parent:   asv.11 | child:      asv.79
+|    parent:   asv.12 | child:      asv.80
+|    parent:   asv.13 | child:      asv.62
+|    parent:   asv.15 | children:   asv.96, asv.91
+|    parent:   asv.16 | child:      asv.24
+|    parent:   asv.19 | children:   asv.83, asv.51
+|    parent:   asv.20 | children:   asv.42, asv.71
+|    parent:   asv.21 | child:      asv.28
+|    parent:   asv.23 | children:   asv.29, asv.35, asv.47, asv.50
+|    parent:   asv.27 | children:   asv.45, asv.59
+|    parent:   asv.33 | child:      asv.75
+|    parent:   asv.34 | children:   asv.52, asv.78
+|    parent:   asv.54 | children:   asv.69, asv.98
+|    parent:   asv.37 | child:      asv.43
+|    parent:   asv.39 | child:      asv.40
+|    parent:   asv.41 | children:   asv.53, asv.57
+|    parent:   asv.49 | child:      asv.85
+|    parent:   asv.67 | child:      asv.89
+```
+
+*tombRaider* will generate four files, including an updated version of the three input files and a log file.
+
+### 5.2 ALEX
+
+Since the BLAST output contains a maximum 100 hits for each ASV, we can use the software program [ALEX](https://github.com/gjeunen/ALEX) (Ancestor Link EXplorer) to parse the BLAST results. ALEX takes in a BLAST file, finds the most recent common ancestor, and outputs the taxonomic ID, as well as the species list of the most recent common ancestor results per ASV in a table that is ordered identical to the count table, thereby allowing easy merging.
+
+```{code-block} bash
+alex --mrca --blast-input 10.final/tombRaider_blastn_taxonomy.txt --table-input 10.final/tombRaider_ethanol_comparison_heDNA_table.txt --names-input names.dmp --nodes-input nodes.dmp --output 10.final/alex_blastn_taxonomy.txt
+```
+
+### 5.3 Negative controls
+
+After removal of PCR artefacts, we can import all data into R. First, we explore eDNA signals present in the negative control samples.
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(Biostrings)
+library(dplyr)
+
+## read data into R
+count_table <- read.table('tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+sequence_table <- readDNAStringSet('tombRaider_ethanol_comparison_heDNA_asvs.fasta')
+taxonomy_table <- read.table('alex_tombRaider_blastn_taxonomy.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+metadata_table <- read.table('ethanol_comparison_heDNA_metadata.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+
+## list negative controls present and absent in count_table
+negative_control_samples <- rownames(metadata_table[metadata_table$type == 'negative', ])
+negatives_present_in_count <- negative_control_samples[negative_control_samples %in% colnames(count_table)]
+negatives_absent_in_count <- negative_control_samples[!negative_control_samples %in% colnames(count_table)]
+
+## explore negative control samples
+for (i in seq_along(negatives_present_in_count)) {
+  col_name <- negatives_present_in_count[i]
+  print(col_name)
+  print(sum(count_table[[col_name]]))
+  print(sum(count_table[[col_name]]) / sum(count_table) * 100)
+  row_names_above_zero <- rownames(count_table[count_table[[col_name]] > 0, ])
+  sample_sums <- numeric(length(row_names_above_zero))
+  sample_count <- numeric(length(row_names_above_zero))
+  proportion_count <- numeric(length(row_names_above_zero))
+  negative_reads <- numeric(length(row_names_above_zero))
+  negative_reads_percentage <- numeric(length(row_names_above_zero))
+  negative_taxa_id <- numeric(length(row_names_above_zero))
+  for (i in seq_along(row_names_above_zero)){
+    row_name <- row_names_above_zero[i]
+    row_values <- count_table[row_name, setdiff(colnames(count_table), col_name)]
+    sample_sums[i] <- sum(row_values)
+    sample_count[i] <- sum(row_values > 0)
+    negative_reads[i] <- count_table[row_name, col_name]
+    negative_taxa_id[i] <- taxonomy_table[row_name, 'matching species IDs']
+    negative_reads_percentage[i] <- negative_reads[i] / sample_sums[i] * 100
+    proportion_count[i] <- sample_count[i] / (ncol(count_table) - length(negatives_present_in_count)) * 100
+  }
+  result_df <- data.frame(
+    row_name = row_names_above_zero,
+    taxon_id = negative_taxa_id,
+    neg_reads = negative_reads,
+    sample_reads = sample_sums,
+    neg_proportion = negative_reads_percentage,
+    positive_samples = sample_count,
+    proportion_positive = proportion_count
+  )
+  print(result_df)
+}
+
+## remove contamination and singleton detections
+count_table_clean <- subset(count_table, rownames(count_table) != 'asv.14')
+count_table_clean <- as.data.frame(t(apply(count_table_clean, 1, function(row){
+  rowsum_value <- sum(row)
+  threshold <- 0.004 / 100 * rowsum_value
+  ifelse(row < threshold, 0, row)
+})))
+count_table_clean[count_table_clean < 2] <- 0
+
+## check if any samples or ASVs sum to zero and remove them
+remove_0_cols <- colnames(count_table_clean)[colSums(count_table_clean) == 0]
+remove_0_rows <- rownames(count_table_clean)[rowSums(count_table_clean) == 0]
+count_table_clean <- count_table_clean[, !(names(count_table_clean) %in% remove_0_cols)]
+count_table_clean <- count_table_clean[!(rownames(count_table_clean) %in% remove_0_rows), ]
+
+## update other dataframes
+metadata_table_clean <- metadata_table[colnames(count_table_clean), ]
+sequence_table_clean <- sequence_table[rownames(count_table_clean)]
+taxonomy_table_clean <- taxonomy_table[rownames(count_table_clean), ]
+
+## export dataframes to output files
+writeXStringSet(sequence_table_clean, file = 'contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs.fasta')
+write.table(count_table_clean, file = 'contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', append = FALSE, sep = '\t', dec = '.', row.names = TRUE, col.names = NA)
+write.table(metadata_table_clean, file = 'contaminant_removed_ethanol_comparison_heDNA_metadata.txt', append = FALSE, sep = '\t', dec = '.', row.names = TRUE, col.names = NA)
+write.table(taxonomy_table_clean, file = 'contaminant_removed_alex_tombRaider_blastn_taxonomy.txt', append = FALSE, sep = '\t', dec = '.', row.names = TRUE, col.names = NA)
+```
+
+The code above shows that only 1 out of 15 control samples (sample ID: qPCRNEG) contained any reads. 52 reads were assigned to qPCRNEG, which amounts to 0.00028% of the data. Reads were assigned to five ASVs, with detailed information provided in the table below.
+
+```{admonition}
+  row_name                taxon_id neg_reads sample_reads neg_proportion positive_samples proportion_positive
+1    asv.1     Chaenodraco wilsoni        13      4470614   0.0002907878               76           36.190476
+2    asv.6     Cryodraco atkinsoni         4       985377   0.0004059360               91           43.333333
+3    asv.7 Pleuragramma antarctica        14       786855   0.0017792351              124           59.047619
+4   asv.14  Laemonema sp. ARV-2009        22       154938   0.0141992281                3            1.428571
+5   asv.21      Chionodraco myersi         4       102528   0.0039013733               51           24.285714
+```
+
+Based on these results, we will remove asv.14 from the data set, since it is only present in a single sample with more than 1 read (2 out of 3 samples only positive as singletons). We will also filter the data based on an abundance threshold of 0.0039% or 1, depending on which is higher. After abundance threshold filtration, the qPCRNEG sample does not contain any reads, as well as 4 samples, including T74_1, T74_8, TW74_5, and TW74_6. All samples are tissue extractions from the calcereous sponge. Besides asv.14, which is deemed a contaminant, no additional ASVs sum to 0. Therefore, no additional ASVs are removed.
+
+### 5.4 Unassigned and off-target ASVs
+
+Besides contamination removal, we will also investigate ASVs without a taxonomic ID and ASVs assigned to off target species.
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(Biostrings)
+library(dplyr)
+
+## read data into R
+count_table <- read.table('contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+sequence_table <- readDNAStringSet('contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs.fasta')
+taxonomy_table <- read.table('contaminant_removed_alex_tombRaider_blastn_taxonomy.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+metadata_table <- read.table('contaminant_removed_ethanol_comparison_heDNA_metadata.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+
+## list ASVs without a taxonomic ID and print sequences for manual BLASTing
+no_tax_id <- rownames(taxonomy_table[is.na(taxonomy_table$superkingdom), ])
+for (item in no_tax_id) {
+  print(item)
+  print(as.character(sequence_table[[item]]))
+}
+
+## list ASVs with an off-target taxonomic ID and print sequences for manual BLASTing
+off_target_id <- rownames(taxonomy_table[taxonomy_table$phylum != 'Chordata' & !is.na(taxonomy_table$phylum), ])
+for (item in off_target_id) {
+  print(item)
+  print(as.character(sequence_table[[item]]))
+}
+
+## remove ASVs in no_tax_id and off_target_id from count_table
+count_table_clean <- count_table[!(rownames(count_table) %in% no_tax_id | rownames(count_table) %in% off_target_id), ]
+
+## remove any columns that sum to 0
+remove_0_cols <- colnames(count_table_clean)[colSums(count_table_clean) <1000]
+count_table_clean <- count_table_clean[, !(names(count_table_clean) %in% remove_0_cols)]
+
+## update other data frames
+metadata_table_clean <- metadata_table[colnames(count_table_clean), ]
+sequence_table_clean <- sequence_table[rownames(count_table_clean)]
+taxonomy_table_clean <- taxonomy_table[rownames(count_table_clean), ]
+
+## export data to files
+writeXStringSet(sequence_table_clean, file = 'clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs.fasta')
+write.table(count_table_clean, file = 'clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', append = FALSE, sep = '\t', dec = '.', row.names = TRUE, col.names = NA)
+write.table(metadata_table_clean, file = 'clean_contaminant_removed_ethanol_comparison_heDNA_metadata.txt', append = FALSE, sep = '\t', dec = '.', row.names = TRUE, col.names = NA)
+write.table(taxonomy_table_clean, file = 'clean_contaminant_removed_alex_tombRaider_blastn_taxonomy.txt', append = FALSE, sep = '\t', dec = '.', row.names = TRUE, col.names = NA)
+```
+
+There are 8 ASVs that did not receive a taxonomic ID with the local BLAST search, including asv.32, asv.34, asv. 41, asv.44, asv.48, asv.84, asv.107, and asv.106. These 8 ASVs will be manually searched against the full NCBI database with an [online BLAST search](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome) with default settings. All BLAST results came back as "No significant similarity found." and all 8 ASVs will, therefore, be removed from the analysis.
+
+There are also 3 ASVs that received non-chordate taxonomic ID's, including asv.16, asv.17, and asv.25. These 3 ASVs will also be manually searched against the full NCBI database with an [online BLAST search](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome) to ensure ASVs do not belong to the phylum Chordata. Results for the online BLAST search agree with results obtained from the local BLAST search, with all 3 ASVs assigned to echinoderm taxa. Given that the primers are not optimised for echinoderms and amplification will potentially highly variable, we will remove these ASVs from the analysis.
+
+Removal of these 11 ASVs resulted in a drop of an additional 21 samples. All samples are extractions from the calcereous sponge using different extraction techniques, including E74_3, E74_7, F174_1, F174_10, F174_6, F174_7, F174_8, P74_2, P74_3, T74_10, T74_3, T74_4, T74_5, T74_9, TW74_1, TW74_10, TW74_3, TW74_4, TW74_7, TW74_8, TW74_9.
+
+Once we have exported the updated files after data curation, we have generated the final files for statistical analysis and can move forward with the statistical analysis.
 
 ## 6. Basic read stats
 
