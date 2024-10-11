@@ -560,11 +560,11 @@ Removal of these 11 ASVs resulted in a drop of an additional 21 samples. All sam
 
 Once we have exported the updated files after data curation, we have generated the final files for statistical analysis and can move forward with the statistical analysis.
 
-## 6. Basic read stats
+## 6. Data exploration
 
-Now that we have all files and filtering steps conducted, we can count reads across the different filtering steps for all samples combined and per sample. This information can be put into the supplemental files and plotted as a bar graph. To accomplish this, we can execute the python scripts below.
+### 6.1 Track reads across various stages of data processing and curation
 
-The python script for total read count:
+Tracking the number of total reads and reads per sample at various points during the bioinformatic analysis and data curation steps will help visualise potential issues with the code or with samples. The python code below parses the number of reads and returns a text file. The following R code plots the data for use in supplemental files.
 
 ```{code-block} python
 #! /usr/bin/env Python3
@@ -593,38 +593,32 @@ with open(f'6.filtered/ethanol_comparison_heDNA_combined_filtered.fastq', 'r') a
         filtercount += 1
 filtercount = int(filtercount / 4)
 
-# denoised total read count
-denoisecount = 0
-with open('9.denoised/ethanol_comparison_heDNA_combined_filtered_derep_denoised.fasta', 'r') as denoisef:
-    for line in denoisef:
-        if 'size=' in line:
-            denoisecount += int(line.split('size=')[1].rstrip('\n'))
+# pre data curation read count
+curationcount = 0
+with open('10.final/ethanol_comparison_heDNA_table.txt', 'r') as curationf:
+    for line in curationf:
+        if line.startswith('asv'):
+            asvcount = line.rstrip('\n').split('\t')[1:]
+            for item in asvcount:
+                curationcount += int(item)
 
 # final total read count
 finalcount = 0
-with open('10.final/ethanol_comparison_heDNA_table.txt', 'r') as finalf:
+with open('10.final/clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', 'r') as finalf:
     for line in finalf:
         if line.startswith('asv'):
             asvcount = line.rstrip('\n').split('\t')[1:]
             for item in asvcount:
                 finalcount += int(item)
 
-print(f"raw total read count: {rawcount} ({(rawcount / rawcount * 100):.2f}%)")
-print(f"demultiplexed total read count: {demultiplexcount} ({(demultiplexcount / rawcount * 100):.2f}%)")
-print(f"filtered total read count: {filtercount} ({(filtercount / rawcount * 100):.2f}%)")
-print(f"denoised total read count: {denoisecount} ({(denoisecount / rawcount * 100):.2f}%)")
-print(f"final total read count: {finalcount} ({(finalcount / rawcount * 100):.2f}%)")
+# write data to output
+with open('10.final/tracking_read_count_total.txt', 'r') as outfile:
+    outfile.write(f'type\tcount\tproportion\nrawcount\t{rawcount}\t{(rawcount / rawcount * 100):.2f}\n')
+    outfile.write(f'demuxcount\t{demultiplexcount}\t{(demultiplexcount / rawcount * 100):.2f}\n')
+    outfile.write(f'filtercount\t{filtercount}\t{(filtercount / rawcount * 100):.2f}\n')
+    outfile.write(f'curationcount\t{curationcount}\t{(curationcount / rawcount * 100):.2f}\n')
+    outfile.write(f'finalcount\t{finalcount}\t{(finalcount / rawcount * 100):.2f}\n')
 ```
-
-```{admonition}
-raw total read count: 36349307 (100.00%)
-demultiplexed total read count: 24149058 (66.44%)
-filtered total read count: 20363664 (56.02%)
-denoised total read count: 16782602 (46.17%)
-final total read count: 20247244 (55.70%)
-```
-
-The python script for the per sample read count:
 
 ```{code-block} python
 #! /usr/bin/env Python3
@@ -660,11 +654,27 @@ with open('6.filtered/ethanol_comparison_heDNA_combined_filtered.fasta', 'r') as
             except KeyError:
                 sampledict[filterID]['filtercount'] = 1
 
-# read count from ASV table (can't look at denoised data, as there is no mapping file available)
+# read count from ASV table pre data curation
 mapDict = {}
-with open('10.final/ethanol_comparison_heDNA_table.txt', 'r') as finalf:
-    for line in finalf:
+with open('10.final/ethanol_comparison_heDNA_table.txt', 'r') as curationf:
+    for line in curationf:
         if line.startswith('#'):
+            maplist = line.rstrip('\n').split('\t')[1:]
+            for i in range(len(maplist)):
+                mapDict[i] = maplist[i]
+        else:
+            readlist = line.rstrip('\n').split('\t')[1:]
+            for i in range(len(readlist)):
+                try:
+                    sampledict[mapDict[i]]['finalcount'] += int(readlist[i])
+                except KeyError:
+                    sampledict[mapDict[i]]['finalcount'] = int(readlist[i])
+
+# read count from final ASV table
+mapDict = {}
+with open('10.final/clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', 'r') as finalf:
+    for line in finalf:
+        if line.startswith('\t'):
             maplist = line.rstrip('\n').split('\t')[1:]
             for i in range(len(maplist)):
                 mapDict[i] = maplist[i]
@@ -684,235 +694,51 @@ for key, value in sampledict.items():
     print(f'sample ID: {key}{valuestring}')
 ```
 
-```{admonition}
-sample ID: TW35_1, demuxcount: 143580, filtercount: 93988, finalcount: 92289
-sample ID: TW35_2, demuxcount: 98243, filtercount: 23411, finalcount: 23356
-sample ID: TW35_3, demuxcount: 244561, filtercount: 133649, finalcount: 132407
-sample ID: TW35_4, demuxcount: 177352, filtercount: 81554, finalcount: 80822
-sample ID: TW35_5, demuxcount: 161841, filtercount: 57836, finalcount: 57385
-sample ID: TW35_6, demuxcount: 173331, filtercount: 75752, finalcount: 75495
-sample ID: TW35_7, demuxcount: 114843, filtercount: 36955, finalcount: 36577
-sample ID: TW35_8, demuxcount: 146863, filtercount: 87354, finalcount: 86404
-sample ID: TW35_9, demuxcount: 219102, filtercount: 147861, finalcount: 145747
-sample ID: TW35_10, demuxcount: 165332, filtercount: 89717, finalcount: 89009
-sample ID: T35_1, demuxcount: 101810, filtercount: 61000, finalcount: 60397
-sample ID: T35_2, demuxcount: 97229, filtercount: 45745, finalcount: 45494
-sample ID: T35_3, demuxcount: 183769, filtercount: 81024, finalcount: 80538
-sample ID: T35_4, demuxcount: 177932, filtercount: 78464, finalcount: 78119
-sample ID: T35_5, demuxcount: 201563, filtercount: 107766, finalcount: 106995
-sample ID: T35_6, demuxcount: 204849, filtercount: 121924, finalcount: 120954
-sample ID: T35_7, demuxcount: 152911, filtercount: 92192, finalcount: 91502
-sample ID: T35_8, demuxcount: 125022, filtercount: 79136, finalcount: 78531
-sample ID: T35_9, demuxcount: 177188, filtercount: 104396, finalcount: 104144
-sample ID: T35_10, demuxcount: 226154, filtercount: 165870, finalcount: 164306
-sample ID: F135_1, demuxcount: 130786, filtercount: 109254, finalcount: 108663
-sample ID: F135_2, demuxcount: 78275, filtercount: 48764, finalcount: 48603
-sample ID: F135_3, demuxcount: 89875, filtercount: 43985, finalcount: 43739
-sample ID: F135_4, demuxcount: 139378, filtercount: 111615, finalcount: 111584
-sample ID: F135_5, demuxcount: 101281, filtercount: 74388, finalcount: 73660
-sample ID: F135_6, demuxcount: 114746, filtercount: 104439, finalcount: 104048
-sample ID: F135_7, demuxcount: 67355, filtercount: 52371, finalcount: 52354
-sample ID: F135_8, demuxcount: 106715, filtercount: 95653, finalcount: 94656
-sample ID: F135_9, demuxcount: 146148, filtercount: 124387, finalcount: 123658
-sample ID: F135_10, demuxcount: 113224, filtercount: 98707, finalcount: 98204
-sample ID: F035_1, demuxcount: 92516, filtercount: 71656, finalcount: 70915
-sample ID: F035_2, demuxcount: 59722, filtercount: 30028, finalcount: 29883
-sample ID: F035_3, demuxcount: 152965, filtercount: 129034, finalcount: 127818
-sample ID: F035_4, demuxcount: 131749, filtercount: 101162, finalcount: 100228
-sample ID: F035_5, demuxcount: 150102, filtercount: 122405, finalcount: 120877
-sample ID: F035_6, demuxcount: 175876, filtercount: 151977, finalcount: 149205
-sample ID: F035_7, demuxcount: 105326, filtercount: 87879, finalcount: 86908
-sample ID: F035_8, demuxcount: 88310, filtercount: 80855, finalcount: 80014
-sample ID: F035_9, demuxcount: 145088, filtercount: 123308, finalcount: 122166
-sample ID: F035_10, demuxcount: 132247, filtercount: 116731, finalcount: 115563
-sample ID: Ext_Ctrl_2, demuxcount: 82, filtercount: 1
-sample ID: Ext_Ctrl_1, demuxcount: 38
-sample ID: Ext_Ctrl_3, demuxcount: 730
-sample ID: qPCRNEG1, demuxcount: 439
-sample ID: C35_1, demuxcount: 63256, filtercount: 42675, finalcount: 42049
-sample ID: C35_2, demuxcount: 54031, filtercount: 39863, finalcount: 39654
-sample ID: C35_3, demuxcount: 94742, filtercount: 71636, finalcount: 71336
-sample ID: C35_4, demuxcount: 129340, filtercount: 114567, finalcount: 113384
-sample ID: C35_5, demuxcount: 125213, filtercount: 105328, finalcount: 104012
-sample ID: C35_6, demuxcount: 131111, filtercount: 120869, finalcount: 120138
-sample ID: C35_7, demuxcount: 83419, filtercount: 70750, finalcount: 70282
-sample ID: C35_8, demuxcount: 68685, filtercount: 61528, finalcount: 61106
-sample ID: C35_9, demuxcount: 135244, filtercount: 121915, finalcount: 120793
-sample ID: C35_10, demuxcount: 112209, filtercount: 75933, finalcount: 75061
-sample ID: P35_1, demuxcount: 103287, filtercount: 90421, finalcount: 89373
-sample ID: P35_2, demuxcount: 87142, filtercount: 61016, finalcount: 60591
-sample ID: P35_3, demuxcount: 139718, filtercount: 101302, finalcount: 100609
-sample ID: P35_4, demuxcount: 92188, filtercount: 54646, finalcount: 54309
-sample ID: P35_5, demuxcount: 171138, filtercount: 146422, finalcount: 144762
-sample ID: P35_6, demuxcount: 139027, filtercount: 130032, finalcount: 129014
-sample ID: P35_7, demuxcount: 111530, filtercount: 97202, finalcount: 96451
-sample ID: P35_8, demuxcount: 103810, filtercount: 92183, finalcount: 90645
-sample ID: P35_9, demuxcount: 146099, filtercount: 120868, finalcount: 119387
-sample ID: P35_10, demuxcount: 154540, filtercount: 135972, finalcount: 133987
-sample ID: E35_1, demuxcount: 39350, filtercount: 21767, finalcount: 21609
-sample ID: E35_2, demuxcount: 37609, filtercount: 27145, finalcount: 27034
-sample ID: E35_3, demuxcount: 56346, filtercount: 38204, finalcount: 37879
-sample ID: E35_4, demuxcount: 66844, filtercount: 56303, finalcount: 55858
-sample ID: E35_5, demuxcount: 80373, filtercount: 69717, finalcount: 69189
-sample ID: E35_6, demuxcount: 70416, filtercount: 56568, finalcount: 56242
-sample ID: E35_7, demuxcount: 72942, filtercount: 62874, finalcount: 62164
-sample ID: E35_8, demuxcount: 44075, filtercount: 36935, finalcount: 36417
-sample ID: E35_9, demuxcount: 64147, filtercount: 53886, finalcount: 53228
-sample ID: E35_10, demuxcount: 68516, filtercount: 53377, finalcount: 52310
-sample ID: Ext_Ctrl_4, demuxcount: 3
-sample ID: Ext_Ctrl_5, demuxcount: 47
-sample ID: Ext_Ctrl_6, demuxcount: 34
-sample ID: qPCRNEG2, demuxcount: 4
-sample ID: TW24_1, demuxcount: 81610, filtercount: 74715, finalcount: 74293
-sample ID: TW24_2, demuxcount: 128029, filtercount: 119697, finalcount: 118904
-sample ID: TW24_3, demuxcount: 151103, filtercount: 138778, finalcount: 137587
-sample ID: TW24_4, demuxcount: 135712, filtercount: 125840, finalcount: 124942
-sample ID: TW24_5, demuxcount: 122073, filtercount: 113344, finalcount: 112578
-sample ID: TW24_6, demuxcount: 122128, filtercount: 112905, finalcount: 112182
-sample ID: TW24_7, demuxcount: 95074, filtercount: 89347, finalcount: 88846
-sample ID: TW24_8, demuxcount: 70337, filtercount: 64594, finalcount: 64035
-sample ID: TW24_9, demuxcount: 168101, filtercount: 156308, finalcount: 155330
-sample ID: TW24_10, demuxcount: 154737, filtercount: 131189, finalcount: 130563
-sample ID: T24_1, demuxcount: 93806, filtercount: 87160, finalcount: 86759
-sample ID: T24_2, demuxcount: 154935, filtercount: 144367, finalcount: 143653
-sample ID: T24_3, demuxcount: 155464, filtercount: 143600, finalcount: 142938
-sample ID: T24_4, demuxcount: 87950, filtercount: 84846, finalcount: 84374
-sample ID: T24_5, demuxcount: 140900, filtercount: 130747, finalcount: 130189
-sample ID: T24_6, demuxcount: 133683, filtercount: 128931, finalcount: 128495
-sample ID: T24_7, demuxcount: 88238, filtercount: 83227, finalcount: 82948
-sample ID: T24_8, demuxcount: 70703, filtercount: 66270, finalcount: 65862
-sample ID: T24_9, demuxcount: 95713, filtercount: 91548, finalcount: 90947
-sample ID: T24_10, demuxcount: 81194, filtercount: 77727, finalcount: 77372
-sample ID: F124_1, demuxcount: 66898, filtercount: 63481, finalcount: 63293
-sample ID: F124_2, demuxcount: 86663, filtercount: 79936, finalcount: 79660
-sample ID: F124_3, demuxcount: 101458, filtercount: 95790, finalcount: 95572
-sample ID: F124_4, demuxcount: 91705, filtercount: 88377, finalcount: 87998
-sample ID: F124_5, demuxcount: 102332, filtercount: 98255, finalcount: 97915
-sample ID: F124_6, demuxcount: 134564, filtercount: 129803, finalcount: 129276
-sample ID: F124_7, demuxcount: 90487, filtercount: 87352, finalcount: 87023
-sample ID: F124_8, demuxcount: 70572, filtercount: 67938, finalcount: 67709
-sample ID: F124_9, demuxcount: 95052, filtercount: 90880, finalcount: 90562
-sample ID: F124_10, demuxcount: 105241, filtercount: 101238, finalcount: 100805
-sample ID: F024_1, demuxcount: 56410, filtercount: 52412, finalcount: 52139
-sample ID: F024_2, demuxcount: 98458, filtercount: 91942, finalcount: 91295
-sample ID: F024_3, demuxcount: 120737, filtercount: 114551, finalcount: 113769
-sample ID: F024_4, demuxcount: 107246, filtercount: 102150, finalcount: 101422
-sample ID: F024_5, demuxcount: 120491, filtercount: 114837, finalcount: 114110
-sample ID: F024_6, demuxcount: 120807, filtercount: 115283, finalcount: 114558
-sample ID: F024_7, demuxcount: 87978, filtercount: 83730, finalcount: 83103
-sample ID: F024_8, demuxcount: 66861, filtercount: 63646, finalcount: 63222
-sample ID: F024_9, demuxcount: 107614, filtercount: 102193, finalcount: 101493
-sample ID: F024_10, demuxcount: 100868, filtercount: 95721, finalcount: 94983
-sample ID: C24_1, demuxcount: 53712, filtercount: 50640, finalcount: 50226
-sample ID: C24_2, demuxcount: 89846, filtercount: 81639, finalcount: 81095
-sample ID: C24_3, demuxcount: 85446, filtercount: 81060, finalcount: 80509
-sample ID: C24_4, demuxcount: 86573, filtercount: 82864, finalcount: 82235
-sample ID: C24_5, demuxcount: 116442, filtercount: 111715, finalcount: 110956
-sample ID: C24_6, demuxcount: 99149, filtercount: 94739, finalcount: 93971
-sample ID: C24_7, demuxcount: 71496, filtercount: 68290, finalcount: 67855
-sample ID: C24_8, demuxcount: 54614, filtercount: 52297, finalcount: 51899
-sample ID: C24_9, demuxcount: 79542, filtercount: 75764, finalcount: 75201
-sample ID: C24_10, demuxcount: 92107, filtercount: 87313, finalcount: 86695
-sample ID: P24_1, demuxcount: 64500, filtercount: 61407, finalcount: 60923
-sample ID: P24_2, demuxcount: 87046, filtercount: 79568, finalcount: 79001
-sample ID: P24_3, demuxcount: 85158, filtercount: 80007, finalcount: 79400
-sample ID: P24_4, demuxcount: 79841, filtercount: 76789, finalcount: 76236
-sample ID: P24_5, demuxcount: 139019, filtercount: 132816, finalcount: 131874
-sample ID: P24_6, demuxcount: 154578, filtercount: 148446, finalcount: 147276
-sample ID: P24_7, demuxcount: 114723, filtercount: 109067, finalcount: 108240
-sample ID: P24_8, demuxcount: 107201, filtercount: 102555, finalcount: 101847
-sample ID: P24_9, demuxcount: 96220, filtercount: 92139, finalcount: 91391
-sample ID: P24_10, demuxcount: 79656, filtercount: 76135, finalcount: 75661
-sample ID: E24_1, demuxcount: 56935, filtercount: 53582, finalcount: 53247
-sample ID: E24_2, demuxcount: 86003, filtercount: 79415, finalcount: 78878
-sample ID: E24_3, demuxcount: 121112, filtercount: 114608, finalcount: 113686
-sample ID: E24_4, demuxcount: 105426, filtercount: 100463, finalcount: 99764
-sample ID: E24_5, demuxcount: 105139, filtercount: 100597, finalcount: 99872
-sample ID: E24_6, demuxcount: 99579, filtercount: 95434, finalcount: 94804
-sample ID: E24_7, demuxcount: 78193, filtercount: 74438, finalcount: 73878
-sample ID: E24_8, demuxcount: 63906, filtercount: 60711, finalcount: 60249
-sample ID: E24_9, demuxcount: 85193, filtercount: 81546, finalcount: 80939
-sample ID: E24_10, demuxcount: 94771, filtercount: 90863, finalcount: 90219
-sample ID: TW74_1, demuxcount: 8494, filtercount: 236, finalcount: 234
-sample ID: TW74_2, demuxcount: 512450, filtercount: 496100, finalcount: 495930
-sample ID: TW74_3, demuxcount: 16537, filtercount: 190, finalcount: 188
-sample ID: TW74_4, demuxcount: 26258, filtercount: 685, finalcount: 680
-sample ID: TW74_5, demuxcount: 14197, filtercount: 28, finalcount: 28
-sample ID: TW74_6, demuxcount: 7731, filtercount: 3, finalcount: 3
-sample ID: TW74_7, demuxcount: 725, filtercount: 56, finalcount: 55
-sample ID: TW74_8, demuxcount: 112532, filtercount: 91440, finalcount: 90777
-sample ID: TW74_9, demuxcount: 2006, filtercount: 62, finalcount: 62
-sample ID: TW74_10, demuxcount: 22388, filtercount: 401, finalcount: 399
-sample ID: T74_1, demuxcount: 9292, filtercount: 37, finalcount: 33
-sample ID: T74_2, demuxcount: 162779, filtercount: 158515, finalcount: 158042
-sample ID: T74_3, demuxcount: 5334, filtercount: 8, finalcount: 6
-sample ID: T74_4, demuxcount: 4778, filtercount: 33, finalcount: 31
-sample ID: T74_5, demuxcount: 427, filtercount: 40, finalcount: 39
-sample ID: T74_6, demuxcount: 548258, filtercount: 534676, finalcount: 533294
-sample ID: T74_7, demuxcount: 407835, filtercount: 397863, finalcount: 396996
-sample ID: T74_8, demuxcount: 95942, filtercount: 26, finalcount: 25
-sample ID: T74_9, demuxcount: 89244, filtercount: 42, finalcount: 42
-sample ID: T74_10, demuxcount: 10223, filtercount: 6577, finalcount: 6545
-sample ID: F174_1, demuxcount: 57508, filtercount: 27, finalcount: 27
-sample ID: F174_2, demuxcount: 95802, filtercount: 76980, finalcount: 76578
-sample ID: F174_3, demuxcount: 32406, filtercount: 25471, finalcount: 25447
-sample ID: F174_4, demuxcount: 62598, filtercount: 55197, finalcount: 55150
-sample ID: F174_5, demuxcount: 140706, filtercount: 123438, finalcount: 123263
-sample ID: F174_6, demuxcount: 21242, filtercount: 1466, finalcount: 1447
-sample ID: F174_7, demuxcount: 17850, filtercount: 1549, finalcount: 1541
-sample ID: F174_8, demuxcount: 15655, filtercount: 72, finalcount: 71
-sample ID: F174_9, demuxcount: 48128, filtercount: 37604, finalcount: 37583
-sample ID: F174_10, demuxcount: 17510, filtercount: 1828, finalcount: 1812
-sample ID: F074_1, demuxcount: 312470, filtercount: 306177, finalcount: 303882
-sample ID: F074_2, demuxcount: 185178, filtercount: 181177, finalcount: 181023
-sample ID: F074_3, demuxcount: 204270, filtercount: 198128, finalcount: 196777
-sample ID: F074_4, demuxcount: 176437, filtercount: 168417, finalcount: 167361
-sample ID: F074_5, demuxcount: 171153, filtercount: 165028, finalcount: 164705
-sample ID: F074_6, demuxcount: 246118, filtercount: 233926, finalcount: 233317
-sample ID: F074_7, demuxcount: 254476, filtercount: 249049, finalcount: 248880
-sample ID: F074_8, demuxcount: 123578, filtercount: 112305, finalcount: 111965
-sample ID: F074_9, demuxcount: 143908, filtercount: 139050, finalcount: 138892
-sample ID: F074_10, demuxcount: 46583, filtercount: 43566, finalcount: 43538
-sample ID: Centrifuge_Ctrl, demuxcount: 20
-sample ID: Evap_ext_Ctrl, demuxcount: 30
-sample ID: Precip_ext_Ctrl, demuxcount: 75
-sample ID: qPCRNEG, demuxcount: 567, filtercount: 57, finalcount: 57
-sample ID: C74_1, demuxcount: 299777, filtercount: 290849, finalcount: 288089
-sample ID: C74_2, demuxcount: 166665, filtercount: 161443, finalcount: 161252
-sample ID: C74_3, demuxcount: 159506, filtercount: 150824, finalcount: 150198
-sample ID: C74_4, demuxcount: 134280, filtercount: 123911, finalcount: 123427
-sample ID: C74_5, demuxcount: 250840, filtercount: 243999, finalcount: 243595
-sample ID: C74_6, demuxcount: 162920, filtercount: 157223, finalcount: 156944
-sample ID: C74_7, demuxcount: 233917, filtercount: 227533, finalcount: 227243
-sample ID: C74_8, demuxcount: 301617, filtercount: 294529, finalcount: 292975
-sample ID: C74_9, demuxcount: 157321, filtercount: 152730, finalcount: 152201
-sample ID: C74_10, demuxcount: 276526, filtercount: 268947, finalcount: 268587
-sample ID: P74_1, demuxcount: 259263, filtercount: 252368, finalcount: 252204
-sample ID: P74_2, demuxcount: 152011, filtercount: 145359, finalcount: 144080
-sample ID: P74_3, demuxcount: 71174, filtercount: 38786, finalcount: 38513
-sample ID: P74_4, demuxcount: 136304, filtercount: 133152, finalcount: 133075
-sample ID: P74_5, demuxcount: 115017, filtercount: 110314, finalcount: 110061
-sample ID: P74_6, demuxcount: 111544, filtercount: 101937, finalcount: 101888
-sample ID: P74_7, demuxcount: 92371, filtercount: 88165, finalcount: 88125
-sample ID: P74_8, demuxcount: 181566, filtercount: 177263, finalcount: 177137
-sample ID: P74_9, demuxcount: 129588, filtercount: 126551, finalcount: 126483
-sample ID: P74_10, demuxcount: 149684, filtercount: 146054, finalcount: 145969
-sample ID: E74_1, demuxcount: 98890, filtercount: 87211, finalcount: 87101
-sample ID: E74_2, demuxcount: 35343, filtercount: 31338, finalcount: 31244
-sample ID: E74_3, demuxcount: 10041, filtercount: 897, finalcount: 889
-sample ID: E74_4, demuxcount: 86007, filtercount: 80151, finalcount: 80002
-sample ID: E74_5, demuxcount: 97235, filtercount: 91084, finalcount: 90927
-sample ID: E74_6, demuxcount: 134993, filtercount: 111553, finalcount: 111481
-sample ID: E74_7, demuxcount: 46293, filtercount: 29, finalcount: 26
-sample ID: E74_8, demuxcount: 58633, filtercount: 52008, finalcount: 51941
-sample ID: E74_9, demuxcount: 73650, filtercount: 64631, finalcount: 64530
-sample ID: E74_10, demuxcount: 74281, filtercount: 67636, finalcount: 67511
-sample ID: Tissue_ext_Ctrl, demuxcount: 35
-sample ID: Filter_Ctrl, demuxcount: 113
-sample ID: WL_Filt_Ctrl, demuxcount: 14
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(scales)
+
+# Read the data from the text file
+data <- read.table("tracking_read_count_total.txt", header = TRUE, sep = "\t")
+
+# Calculate the differences in reverse order
+data$difference <- c(
+  data$count[1] - data$count[2],
+  data$count[2] - data$count[3],
+  data$count[3] - data$count[4],
+  data$count[4] - data$count[5],
+  data$count[5]                          
+)
+
+# Reorder data to have the stages in reverse order (from rawcount to finalcount)
+data$type <- factor(data$type, levels = c("rawcount", "demuxcount", "filtercount", "curationcount", "finalcount"))
+
+# Set specific colors for each factor
+color_palette <- c(
+  "rawcount" = "#BBC6C8",    
+  "demuxcount" = "#469597", 
+  "filtercount" = "#DDBEAA",  
+  "curationcount" = "#806491", 
+  "finalcount" = "#2F70AF"   
+)
+
+# Create the horizontal stacked bar chart
+ggplot(data, aes(x = "Read Counts", y = difference, fill = type)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_text(aes(label = format(count, big.mark = ",", scientific = FALSE)), 
+            position = position_stack(vjust = 0.5), color = "white", size = 4) +
+  coord_flip() +
+  scale_fill_manual(values = color_palette) +
+  scale_y_log10(expand = expansion(mult = c(0, 0))) +
+  theme_classic() +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), legend.position = "top", legend.text = element_text(size = 12), axis.text.x = element_text(size = 10), axis.title.x = element_blank(), axis.title.y = element_blank())
 ```
 
-Once these numbers have been generated, we can remove the intermediary files to save up space on the internal hard drive.
+Once we have counted the read numbers for intermediary files, we can remove the intermediary files to save up space on the internal hard drive.
 
 ```{code-block} bash
 rm -r 1.fastqc_raw 2.demultiplex 3.renamed 4.combined 5.fastqc_pre_filter 6.filtered 7.fastqc_post_filter 8.dereplication 9.denoised ethanol_comparison_heDNA.fastq
