@@ -738,6 +738,88 @@ ggplot(data, aes(x = "Read Counts", y = difference, fill = type)) +
   theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), legend.position = "top", legend.text = element_text(size = 12), axis.text.x = element_text(size = 10), axis.title.x = element_blank(), axis.title.y = element_blank())
 ```
 
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(scales)
+library(stringr)
+
+# Read the data from the text file
+data <- read.table("tracking_read_count_sample.txt", header = TRUE, sep = "\t")
+
+## calculate the differences for each stage
+data <- data %>%
+  mutate(
+    filterdiff = demuxcount - filtercount,
+    curationdiff = filtercount - curationcount,
+    finaldiff = curationcount - finalcount,
+    group = sub("_.*", "", sample_id),
+    id = sub(".*_", "", sample_id)) %>%
+  mutate(group = ifelse(group %in% c("C24", "C35", "C74", "E24", "E35", 
+                                     "E74", "F024", "F035", "F074", 
+                                     "F124", "F135", "F174", "P24", 
+                                     "P35", "P74", "T24", "T35", 
+                                     "T74", "TW24", "TW35", "TW74"), 
+                        group, "Negative"))
+
+## subset dataframe to split controls and samples
+negative_df <- data %>% filter(group == "Negative")
+sample_df <- data %>% filter(group != "Negative")
+
+# Define the desired order of the sample groups
+group_order <- c("T24", "TW24", "F124", "F024", "P24", "C24", "E24",
+                 "T35", "TW35", "F135", "F035", "P35", "C35", "E35",
+                 "T74", "TW74", "F174", "F074", "P74", "C74", "E74")
+sample_order <- c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+
+# Reshape data to long format for ggplot
+sample_long <- sample_df %>%
+  select(id, group, finalcount, finaldiff, curationdiff, filterdiff) %>%
+  pivot_longer(cols = c(finalcount, finaldiff, curationdiff, filterdiff),
+               names_to = "type", values_to = "count") %>%
+  mutate(type = factor(type, levels = c("filterdiff", "curationdiff", "finaldiff", "finalcount")),
+         group = factor(group, levels = group_order),
+         id = factor(id, levels = sample_order))
+
+negative_long <- negative_df %>%
+  select(sample_id, group, finalcount, finaldiff, curationdiff, filterdiff) %>%
+  pivot_longer(cols = c(finalcount, finaldiff, curationdiff, filterdiff),
+               names_to = "type", values_to = "count")
+
+# Create the stacked bar plot with facets
+ggplot(sample_long, aes(x = id, y = count, fill = type)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("finalcount" = "#2F70AF",
+                               "finaldiff" = "#806491",
+                               "curationdiff" = "#DDBEAA",
+                               "filterdiff" = "#469597")) +
+  labs(x = "Replicate number", y = "Read count") +
+  theme_classic() +
+  scale_y_log10()+
+  theme(axis.text.y = element_text(size = 10),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10)) +
+  facet_wrap(~ group, ncol = 7, nrow = 3)
+
+ggplot(negative_long, aes(x = sample_id, y = count, fill = type)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("finalcount" = "#2F70AF",
+                               "finaldiff" = "#806491",
+                               "curationdiff" = "#DDBEAA",
+                               "filterdiff" = "#469597")) +
+  labs(x = "Replicate number", y = "Read count") +
+  theme_classic() +
+  scale_y_log10()+
+  theme(axis.text.y = element_text(size = 10),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10))
+```
+
 Once we have counted the read numbers for intermediary files, we can remove the intermediary files to save up space on the internal hard drive.
 
 ```{code-block} bash
