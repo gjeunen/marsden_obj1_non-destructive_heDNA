@@ -826,6 +826,219 @@ Once we have counted the read numbers for intermediary files, we can remove the 
 rm -r 1.fastqc_raw 2.demultiplex 3.renamed 4.combined 5.fastqc_pre_filter 6.filtered 7.fastqc_post_filter 8.dereplication 9.denoised ethanol_comparison_heDNA.fastq
 ```
 
+### 6.2 Rarefaction analysis
+
+Besides tracking reads across various stages of data processing and curation, we can investigate if data needs to be rarefied prior to statistical analysis, i.e., equal total read count across samples. We will base the decision to rarefy data on four tests, including (i) even total read distribution across samples, (ii) a lack of a positive correlation between total read count and number of detected ZOTUs, (iii) plateauing of rarefaction curves, and (iv) curvature indices were not observed below the pre-defined threshold of 0.1.
+
+#### 6.2.1 Read distribution across samples
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(ggplot2)
+library(dplyr)
+library(car)
+
+## read data into R
+count_table <- read.table('clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+raw_metadata_table <- read.table('ethanol_comparison_heDNA_metadata.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+
+## add column sums of count_table to metadata_table
+raw_metadata_table$total_read_count_filtered <- colSums(count_table)[rownames(raw_metadata_table)]
+
+## plot total read count in decreasing order
+omit_negative_raw_metadata_table <- raw_metadata_table %>%
+  filter(sponge_id != "negative")
+sample_colors <- c("calcarea" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
+ggplot(omit_negative_raw_metadata_table, aes(x = reorder(row.names(omit_negative_raw_metadata_table), -total_read_count_filtered), y = total_read_count_filtered, fill = sponge_id)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Sponge ID", y = "Total Read Count") +
+  theme_classic() +
+  scale_fill_manual(values = sample_colors) +
+  scale_y_log10(breaks = 10^(seq(0, 6, by = 2)), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "bottom") +
+  facet_wrap(~ method, scales = "free_x", ncol = 4, nrow = 2)
+
+## print basic stats of read distribution across samples
+("Maximum value:", max(omit_negative_raw_metadata_tacatble$total_read_count_filtered, na.rm = TRUE), "in sample:", rownames(omit_negative_raw_metadata_table)[which.max(omit_negative_raw_metadata_table$total_read_count_filtered)], "\n")
+cat("Minimum value:", min(omit_negative_raw_metadata_table$total_read_count_filtered, na.rm = TRUE), "in sample:", rownames(omit_negative_raw_metadata_table)[which.min(omit_negative_raw_metadata_table$total_read_count_filtered)], "\n")
+cat("Mean value:", mean(omit_negative_raw_metadata_table$total_read_count_filtered, na.rm = TRUE), "\n")
+cat("Standard error:", sd(omit_negative_raw_metadata_table$total_read_count_filtered, na.rm = TRUE) / sqrt(sum(!is.na(omit_negative_raw_metadata_table$total_read_count_filtered))), "\n")
+
+## print basic stats of read distribution between groups
+omit_negative_raw_metadata_table %>%
+  group_by(sponge_id) %>%
+  summarise(
+    mean_count = mean(total_read_count_filtered, na.rm = TRUE),
+    se_count = sd(total_read_count_filtered, na.rm = TRUE) / sqrt(n())
+  )
+
+## run one-way ANOVA, test assumptions, and plot data for visualisation
+omit_negative_raw_metadata_table$total_read_count_filtered[is.na(omit_negative_raw_metadata_table$total_read_count_filtered)] <- 0
+model = lm(total_read_count_filtered ~ sponge_id, data = omit_negative_raw_metadata_table)
+Anova(model, type = 'II')
+anova(model)
+summary(model)
+hist(residuals(model), col = 'grey40')
+plot(fitted(model), residuals(model))
+ggplot(omit_negative_raw_metadata_table, aes(x = sponge_id, y = total_read_count_filtered)) +
+  geom_boxplot() +
+  labs(x = "Sponge ID", y = "Total Read Count") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### 6.2.2 Correlation between read count and detected ZOTUs
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(ggplot2)
+library(dplyr)
+library(ggExtra)
+
+## read data into R
+raw_count_table <- read.table('ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+count_table <- read.table('clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+raw_taxonomy_table <- read.table('alex_blastn_taxonomy.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+raw_metadata_table <- read.table('ethanol_comparison_heDNA_metadata.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+
+## add column sums of count_table to metadata_table
+raw_metadata_table$total_read_count_filtered <- colSums(count_table)[rownames(raw_metadata_table)]
+raw_metadata_table$total_observations_filtered <- colSums(count_table > 0)[rownames(raw_metadata_table)]
+
+# subset the data to remove rows with NA values
+subset_data <- raw_metadata_table %>%
+  filter(!is.na(total_read_count_filtered) & !is.na(total_observations_filtered))
+subset_data$total_observations_filtered <- as.integer(subset_data$total_observations_filtered)
+subset_data$total_read_count_filtered <- as.integer(subset_data$total_read_count_filtered)
+
+# fit the GLM model
+glm_model <- glm(total_observations_filtered ~ total_read_count_filtered, 
+                 family = poisson(link = "log"), data = subset_data)
+summary(glm_model)
+
+# make predictions
+subset_data$predicted <- predict(glm_model, type = "response")
+
+# plot results
+subset_data$sponge_id <- as.factor(subset_data$sponge_id)
+subset_data$method <- as.factor(subset_data$method)
+colour_palette <- c("centrifugation" = "#ce7c7d", "filter_1ml" = "#c4d8e1", "evaporation" = "#f2d379", "filter_10ml" = "#4e6c82", "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
+p <- ggplot(subset_data, aes(x = total_read_count_filtered, y = total_observations_filtered, color = method)) +
+  geom_point(aes(shape = sponge_id), size = 3) +
+  scale_shape_manual(values = c("demosponge" = 15, "hexactinellida" = 18, "calcarea" = 16)) +
+  scale_color_manual(values = colour_palette) +
+  geom_smooth(aes(y = predicted), method = "glm", method.args = list(family = "poisson"), 
+              se = TRUE, linetype = 'dotdash', color = "black", linewidth = 0.3) +
+  labs(color = "extraction treatment", shape = "sponge specimen", x = "Total read count", 
+       y = "Number of observed ZOTUs") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(limits = c(0, 25),
+                     breaks = seq(0, 25, by = 5)) +
+  scale_x_log10(limits = c(1e+04, 1e+06), 
+                breaks = c(1e+04, 1e+05, 1e+06), 
+                labels = scales::comma)
+p
+p1 <- ggMarginal(p, type = 'densigram')
+p1
+```
+
+#### 6.2.3 Rarefaction curves
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(ampvis2)
+library(dplyr)
+
+## read data into R
+count_table <- read.table('clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', check.names = FALSE, comment.char = '')
+colnames(count_table)[1] <- "ASV"
+taxonomy_table <- read.table('alex_blastn_taxonomy.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+metadata_table <- read.table('ethanol_comparison_heDNA_metadata.txt', header = TRUE, sep = '\t', check.names = FALSE, comment.char = '')
+
+## add taxon id to count_table with highest resolution != NA
+count_table$Species <- NA
+taxonomy_columns <- c("species", "genus", "family", "order", "class", "phylum", "superkingdom")
+for (column in taxonomy_columns) {
+  count_table$Species <- ifelse(
+    is.na(count_table$Species) & !is.na(taxonomy_table[count_table$ASV, column]),
+    taxonomy_table[count_table$ASV, column],
+    count_table$Species
+  )
+}
+
+## remove samples from metadata_table that are not in count_table
+metadata_table <- metadata_table[metadata_table$sample_id %in% colnames(count_table), ]
+
+## set method as factor for plotting
+metadata_table$method <- factor(metadata_table$method, levels = c("tissue", "tissue_wicked",
+                                                                  "filter_1ml", "filter_10ml",
+                                                                  "centrifugation", "evaporation",
+                                                                  "precipitation"))
+
+## load dataframes into ampvis2 format
+ampvis_df <- amp_load(count_table, metadata_table)
+
+## generate rarefaction curves
+sample_colors <- c("calcarea" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
+rarefaction_curves <- amp_rarecurve(ampvis_df, stepsize = 100, color_by = 'sponge_id') +
+  ylab('Number of observed ZOTUs') +
+  theme_classic() +
+  scale_color_manual(values = sample_colors) +
+  facet_wrap(~ method, scales = "free_x", ncol = 2, nrow = 4) +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(limits = c(0, 25),
+                     breaks = seq(0, 25, by = 5)) +
+  scale_x_continuous(labels = scales::comma)
+rarefaction_curves
+```
+
+#### 6.2.4 Curvature indices
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(DivE)
+library(sf)
+library(dplyr)
+
+## read data in R
+count_table <- read.table('clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', check.names = FALSE, comment.char = '')
+
+## create empty dataframe to place curvature indices in
+curvature_df <- data.frame("sampleID" = numeric(0), "curvatureIndex" = numeric(0))
+
+## iterate over columns and create new data frames
+for (i in 2:ncol(count_table)) {
+  col1_name <- names(count_table)[1]
+  col2_name <- names(count_table)[i]
+  new_df <- data.frame(count_table[, 1], count_table[, i])
+  names(new_df) <- c(col1_name, col2_name)
+  ## function to generate the rarefaction data from a given sample
+  dss <- DivSubsamples(new_df, nrf=100, minrarefac=1, NResamples=10)
+  ## calculate curvature index
+  curvature_value <- Curvature(dss)
+  # add info to empty dataframe
+  new_row <- data.frame("sampleID" = col2_name, "curvatureIndex" = curvature_value)
+  cat("item:", i-1, "/", ncol(count_table), "; sample:", col2_name, "; curvature index: ", curvature_value, "\n")
+  curvature_df <- rbind(curvature_df, new_row)
+}
+
+## output table with curvature indices
+write.table(curvature_df, 'curvatureIndices.txt', append = FALSE, sep = '\t', dec = '.', row.names = FALSE)
+```
+
+### 6.3 Species accumulation curves
+
+To test if sufficient replicates were collected per sample and per treatment, we can draw species accumulation curves. Furthermore, we can estimate the required level of replication to recover 90% of taxa using inter- and extrapolation analyses.
+
+### 6.4 Basic sample read and ZOTU stats
+
+Finally, we need to generate some numbers representing read counts and ZOTU detections across samples.
+
 ## 7. Figure 1: Map of Antarctica
 
 The first figure of the manuscript is a map of Antarctica displaying the locations of the three specimens which were analysed in this experiment. To generate the map, we can run the R script below. To successfully execute the script, several files will need to be downloaded, including:
