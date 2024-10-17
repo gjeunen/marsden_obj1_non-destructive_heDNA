@@ -1033,11 +1033,61 @@ write.table(curvature_df, 'curvatureIndices.txt', append = FALSE, sep = '\t', de
 
 ### 6.3 Species accumulation curves
 
-To test if sufficient replicates were collected per sample and per treatment, we can draw species accumulation curves. Furthermore, we can estimate the required level of replication to recover 90% of taxa using inter- and extrapolation analyses.
+To test if sufficient replicates were collected per sample and per treatment, we can draw species accumulation curves. Furthermore, we can also estimate the percentage of species recovered with our level of replication using inter- and extrapolation analyses.
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(iNEXT.3D)
+library(ggplot2)
+
+## read data in R
+count_table <- read.table('clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
+metadata_table <- read.table('ethanol_comparison_heDNA_metadata.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
+
+## subset metadata_table to remove negatives, fill out count_table with missing samples, transform count_table to presence-absence
+metadata_table <- metadata_table[metadata_table$type != "negative", ]
+for (col in setdiff(rownames(metadata_table), colnames(count_table))) {
+  count_table[[col]] <- 0
+}
+count_table[count_table > 0] <- 1
+
+## generate format that can be read into iNEXT.3D (datatype = "incidence_raw" --> list of matrices)
+metadata_table$distinct <- paste(metadata_table$sponge_id, metadata_table$method, sep = "_")
+categories <- unique(metadata_table$distinct)
+matrix_list <- list(data = list())
+for (category in categories) {
+  matrix_list[["data"]][[category]] <- as.matrix(count_table[, rownames(metadata_table[metadata_table$distinct == category, ]), drop = FALSE])
+}
+
+## run iNEXT3D
+inext_out <- iNEXT3D(data = matrix_list$data, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_raw', nboot = 50)
+
+## explore results
+inext_out$TDInfo
+inext_out$TDAsyEst
+ggiNEXT3D(inext_out, type = 1, facet.var = 'Assemblage') + 
+  facet_wrap(~Assemblage, nrow = 3) +
+  theme(title = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.spacing = unit(1, "lines")) +
+  scale_x_continuous(limits = c(0, 20), 
+                     breaks = seq(0, 20, by = 5),
+                     expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0, 40),
+                     breaks = seq(0, 40, by = 10),
+                     expand = c(0, 0))
+estimate3D(matrix_list$data, diversity = 'TD', q = 0, datatype = 'incidence_raw', base = 'coverage', level = 0.9)
+```
 
 ### 6.4 Basic sample read and ZOTU stats
 
-Finally, we need to generate some numbers representing read counts and ZOTU detections across samples.
+Before analysing alpha and beta diversity, we need to generate some numbers representing read counts and ZOTU detections across samples for the first paragraph of the results section in the manuscript.
+
+```{code-block} R
+
+```
 
 ## 7. Figure 1: Map of Antarctica
 
