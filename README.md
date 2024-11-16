@@ -1086,10 +1086,106 @@ estimate3D(matrix_list$data, diversity = 'TD', q = 0, datatype = 'incidence_raw'
 Before analysing alpha and beta diversity, we need to generate some numbers representing read counts and ZOTU detections across samples for the first paragraph of the results section in the manuscript.
 
 ```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(dplyr)
+library(Rmisc)
+library(ggplot2)
+library(car)
 
+## read data into R
+count_table <- read.table('clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+raw_metadata_table <- read.table('ethanol_comparison_heDNA_metadata.txt', header = TRUE, sep = '\t', row.names = 1, check.names = FALSE, comment.char = '')
+
+## total number of reads and ZOTUs
+sum(count_table)
+nrow(count_table)
+
+## average number of reads per sample
+raw_metadata_table$total_read_count <- colSums(count_table)[rownames(raw_metadata_table)]
+raw_metadata_table <- raw_metadata_table %>%
+  filter(sponge_id != 'negative')
+mean(raw_metadata_table$total_read_count, na.rm = TRUE)
+sd(raw_metadata_table$total_read_count, na.rm = TRUE) / sqrt(sum(!is.na(raw_metadata_table$total_read_count)))
+
+## two-way ANOVA
+raw_metadata_table$total_read_count_filled <- raw_metadata_table$total_read_count
+raw_metadata_table$total_read_count_filled[is.na(raw_metadata_table$total_read_count_filled)] <- 0
+sum <- summarySE(raw_metadata_table, measurevar = "total_read_count_filled",
+          groupvars = c("sponge_id", "method"))
+pd <- position_dodge(.2)
+ggplot(sum, aes(x = method, y = total_read_count_filled, color = sponge_id)) +
+  geom_errorbar(aes(ymin = total_read_count_filled - se, ymax = total_read_count_filled + se), width = 0.2, size = 0.7, position = pd) +
+  geom_point(shape = 15, size = 4, position = pd) +
+  theme_bw() +
+  theme(axis.title.y = element_text(vjust = 1.8),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title = element_text(face = "bold"))
+boxplot(total_read_count_filled ~ method,
+        data = raw_metadata_table,
+        xlab = "treatment",
+        ylab = "read count")
+boxplot(total_read_count_filled ~ sponge_id,
+        data = raw_metadata_table,
+        xlab = "treatment",
+        ylab = "read count")
+boxplot(total_read_count_filled ~ method:sponge_id,
+        data = raw_metadata_table,
+        xlab = "treatment",
+        ylab = "read count")
+model = lm(total_read_count_filled ~ method + sponge_id + method:sponge_id,
+           data = raw_metadata_table)
+Anova(model, type = 'II')
+anova(model)
+summary(model)
+
+## check assumptions
+hist(residuals(model),
+     col = "darkgray")
+plot(fitted(model),
+     residuals(model))
 ```
 
-## 7. Figure 1: Map of Antarctica
+## 7. Phylogenetic tree
+
+```{code-block} R
+## prepare R environment
+setwd("/Users/gjeunen/Documents/work/research_projects/2022_marsden/objective_1/ethanolComparison/10.final")
+library(Biostrings)
+library(DECIPHER)
+library(ape)
+
+## read data into R using Biostrings
+sequence_table <- readDNAStringSet('clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs.fasta')
+
+## generate alignment using DECIPHER
+alignment <- AlignSeqs(sequence_table, anchor = NA)
+
+## export alignment in nexus format using ape
+write.nexus.data(alignment, 'clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs.nex')
+
+# The next steps are not conducted in R.
+# a) generate the .xml file using BEAUTi 2. 
+#       a.1) Import nexus alignment
+#       a.2) Set substitution model to HKY
+#       a.3) Set starting tree to Cluster Tree and cluster type to UPGMA
+#       a.4) Set Chain length to 10^8 and log every 10,000 trees
+#       a.5) Keep remaining settings on default and export .xml file
+# b) run BEAST 2 to generate phylogenetic trees.
+# c) after BEAST 2 completes, check log file in Tracer.
+# d) find best supported tree using TreeAnnotator and export to .tree file.
+# e) visualise tree quality using FigTree.
+```
+
+## 8. Statistical analysis
+
+### 8.1 DNA concentration and purity
+
+### 8.2 Alpha diversity
+
+### 8.3 Beta diversity
+
+## 9. Map of Antarctica
 
 The first figure of the manuscript is a map of Antarctica displaying the locations of the three specimens which were analysed in this experiment. To generate the map, we can run the R script below. To successfully execute the script, several files will need to be downloaded, including:
 
@@ -1183,5 +1279,3 @@ pdf("RSR_spongemap_v2.pdf", width = 8, height = 5.5)
 RSR_plot + annotation_custom(ggplotGrob(inset_map), xmin = xmx - (xmx-xmn)/3, xmax = xmx, ymin = ymx - (ymx-ymn)/3, ymax = ymx + 280000) 
 dev.off() 
 ```
-
-## 8. Figure 2: DNA concentration and purity comparison
