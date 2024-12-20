@@ -1181,6 +1181,176 @@ write.nexus.data(alignment, 'clean_contaminant_removed_tombRaider_ethanol_compar
 
 ### 8.1 DNA concentration and purity
 
+Total DNA concentration and purity were measured for each eDNA extract using the Denovix DS-11. Measurements were recorded and stored in file `qubitAndDenovixMeasurementsAllSponges.xlsx`. The following R script reads in the file, parses the data to remove outliers, conducts the statistical analysis reported in the manuscript, and generates Figure 2 of the manuscript.
+
+```{code-block} R
+## prepare R environment
+rm(list = ls())
+setwd("/Volumes/LaCie/2022_Marsden/objective_1/ethanolComparison")
+required.libraries <- c("readxl", "ggplot2", "tidyr", "outliers", "ggpubr", "car", "rstatix", "aplot")
+lapply(required.libraries, require, character.only = TRUE)
+
+## read data into R
+data <- read_xlsx('qubitAndDenovixMeasurementsAllSponges.xlsx', sheet = 'Sheet1', na = '')
+
+## wrangle data in correct format for statistical analysis and plotting
+colSums(is.na(data))
+data <- data[!is.na(data$Group), ]
+colSums(is.na(data))
+data$spongeID <- substr(data$Group, nchar(data$Group) -1, nchar(data$Group))
+data$treatment <- sub("^([^_]+)_.*$", "\\1", data$`Sample ID`)
+data <- data[which(data$treatment != 'FP'), ]
+data <- data[which(data$spongeID != '92'), ]
+data <- data[which(data$Group != 'NEG'), ]
+str(data, width = 50, strict.width = 'cut')
+data$`Original Sample Conc.` <- as.numeric(data$`Original Sample Conc.`)
+str(data, width = 50, strict.width = 'cut')
+
+## rename categorical variables for plotting
+data$spongeID <- dplyr::recode(data$spongeID, '24' = 'cat # 37124', '35' = 'cat # 37535', '74' = 'cat # 35574')
+data$treatment <- dplyr::recode(data$treatment, 'F0' = 'F10')
+
+## identify and remove outliers across the whole data set
+data %>%
+  ggplot(aes(y = `Original Sample Conc.`, x = Group)) + labs(y = 'DNA conc.', x = 'sponge + treatment') +
+  geom_boxplot(fill = 'grey88')
+data %>%
+  ggplot(aes(y = `260/280`, x = Group)) + labs(y = '260/280', x = 'sponge + treatment') +
+  geom_boxplot(fill = 'grey88')
+grubbs.test(data$`260/280`, type = 11)
+data[data$`260/280` < -10 | data$`260/280` > 10, c("Sample ID", "260/280")]
+data$`260/280`[data$`260/280` < -10 | data$`260/280` > 10] <- NA
+data %>%
+  na.omit() %>%
+  ggplot(aes(y = `260/280`, x = Group)) + labs(y = '260/280', x = 'sponge + treatment') +
+  geom_boxplot(fill = 'grey88')
+data %>%
+  ggplot(aes(y = `260/230`, x = Group)) + labs(y = '260/230', x = 'sponge + treatment') +
+  geom_boxplot(fill = 'grey88')
+grubbs.test(data$`260/230`, type = 11)
+data[data$`260/230` < -5 | data$`260/230` > 5, c("Sample ID", "260/230")]
+data$`260/230`[data$`260/230` < -4 | data$`260/230` > 4] <- NA
+data %>%
+  na.omit() %>%
+  ggplot(aes(y = `260/230`, x = Group)) + labs(y = '260/230', x = 'sponge + treatment') +
+  geom_boxplot(fill = 'grey88')
+
+## check for ANOVA assumptions 
+## (easiest to do this with for loops, as we need to test for three sponges and three measurements)
+## normality of residuals, homogeneity of the response variable, and unbalanced design
+spongeIDs <- c("cat # 37124", "cat # 37535", "cat # 35574")
+factors <- c("Original Sample Conc.", "260/280", "260/230")
+for (sponge in spongeIDs) {
+  for (factor in factors) {
+    subset_data <- data[data$spongeID == sponge, ]
+    aov_model <- aov(as.formula(paste0("`", factor, "` ~ as.factor(Group)")), data = subset_data)
+    residuals_data <- residuals(aov_model)
+    print(
+      ggdensity(residuals_data,
+                main = paste("Density plot of residuals", sponge, "-", factor),
+                xlab = "Residuals")
+    )
+    print(
+      ggqqplot(residuals_data,
+               main = paste("Q-Q plot of residuals", sponge, "-", factor))
+    )
+    hist(residuals_data,
+         main = paste("Histogram of residuals", sponge, "-", factor),
+         xlab = "Residuals", breaks = 20, col = "lightblue", border = "black")
+    shapiro_test <- shapiro.test(residuals_data)
+    print(paste("Shapiro-Wilk test for", sponge, "-", factor))
+    print(shapiro_test)
+    levenes_test <- leveneTest(as.formula(paste0("`", factor, "` ~ as.factor(Group)")), data = subset_data)
+    bartlett_test <- bartlett.test(as.formula(paste0("`", factor, "` ~ as.factor(Group)")), data = subset_data)
+    print(paste("Levene test for", sponge, "-", factor))
+    print(levenes_test)
+    print(paste("Bartlett test for", sponge, "-", factor))
+    print(bartlett_test)
+    table(subset_data$Group[!is.na(subset_data[[factor]])])
+  }
+}
+
+## check for an excess of zeros in the response variable
+sum(data$`Original Sample Conc.` == 0, na.rm = TRUE) * 100 / nrow(data)
+sum(data$`260/280` == 0, na.rm = TRUE) * 100 / nrow(data)
+sum(data$`260/230` == 0, na.rm = TRUE) * 100 / nrow(data)
+
+## run non-parametric Welch's ANOVA given significant Shapiro-Wilk and levene's tests.
+## since we are mainly interested in differences between treatments and not between sponges,
+## we will run the ANOVA once per sponge specimen to simplify the analysis and interpretation of the results.
+# the non-parametric version of a one-way ANOVA for heteroscedasticity is the Welch's ANOVA,
+# followed by the non-parametric post hoc Games-Howell test.
+# I need to keep in mind to adjust the p-values using the Benjamini-Hochberg method afterwards.
+Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
+gh.24.dna <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37124'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
+Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
+gh.24.280 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37124'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
+Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
+gh.24.230 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37124'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
+
+Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
+gh.35.dna <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37535'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
+Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
+gh.35.280 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37535'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
+Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
+gh.35.230 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37535'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
+
+Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
+gh.74.dna <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 35574'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
+Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
+gh.74.280 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 35574'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
+Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
+gh.74.230 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 35574'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
+
+# Seventh, create three sets of box plots to visualise the differences between treatments for:
+# a) total DNA concentration
+# b) 260/280 ratios
+# c) 260/230 ratios
+# At first, we will set the colours and shape.
+treatment_colors <- c("C" = "#E0908D", "E" = "#f2d379", "F10" = "#4e6c82", "F1" = "#c4d8e1", "P" = "#806491", "T" = "grey", "TW" = "black")
+sample_shape <- c('cat # 35574' = 21, 'cat # 37124' = 22, 'cat # 37535' = 24)
+
+# Then, we will create the boxplot for total DNA concentration,
+# followed by the 260/280 ratio and the 160/230 ratio.
+dna_conc <- ggplot(data, aes(x = treatment, y = `Original Sample Conc.`, shape = spongeID)) +
+  geom_boxplot(outlier.shape = NA, width = 0.8) +
+  geom_jitter(aes(fill = treatment, shape = spongeID), size = 3, width = 0.1, alpha = 0.6) +
+  scale_fill_manual(values = treatment_colors) +
+  facet_wrap(~spongeID, ncol = length(unique(data$spongeID))) +
+  scale_y_log10(limits = c(0.0001,100)) +
+  scale_shape_manual(values = sample_shape) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(), axis.text.x = element_blank())
+dna_conc
+
+ratio_280 <- ggplot(na.omit(data), aes(x = treatment, y = `260/280`, shape = spongeID)) +
+  geom_boxplot(outlier.shape = NA, width = 0.8) +
+  geom_jitter(aes(fill = treatment, shape = spongeID), size = 3, width = 0.1, alpha = 0.6) +
+  scale_fill_manual(values = treatment_colors) +
+  facet_wrap(~spongeID, ncol = length(unique(data$spongeID))) +
+  scale_y_continuous(limits = c(-10,10)) +
+  scale_shape_manual(values = sample_shape) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(), axis.text.x = element_blank(), strip.text = element_blank())
+ratio_280
+
+ratio_230 <- ggplot(na.omit(data), aes(x = treatment, y = `260/230`, shape = spongeID)) +
+  geom_boxplot(outlier.shape = NA, width = 0.8) +
+  geom_jitter(aes(fill = treatment, shape = spongeID), size = 3, width = 0.1, alpha = 0.6) +
+  scale_fill_manual(values = treatment_colors) +
+  facet_wrap(~spongeID, ncol = length(unique(data$spongeID))) +
+  scale_y_continuous(limits = c(-5,5)) +
+  scale_shape_manual(values = sample_shape) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), strip.text = element_blank())
+ratio_230
+
+# combine the three graphs together using aplot.
+ratio_280 %>% insert_top(dna_conc) %>% insert_bottom(ratio_230)
+```
+
 ### 8.2 Alpha diversity
 
 ### 8.3 Beta diversity
