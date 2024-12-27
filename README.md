@@ -1353,6 +1353,217 @@ ratio_280 %>% insert_top(dna_conc) %>% insert_bottom(ratio_230)
 
 ### 8.2 Alpha diversity
 
+Alpha diversity was analysed for species richness (Taxonomic Diversity) and Faith's PD (Phylogenetic Diversity). The following R script reads in the files, parses the data, conducts the statistical analysis (one way ANOVAs, followed by *post hoc* Tukey HSD) reported in the manuscript, and generates Figure 3 of the manuscript.
+
+```{code-block} R
+## prepare R environment
+rm(list = ls())
+setwd("/Volumes/LaCie/2022_Marsden/objective_1/ethanolComparison")
+required.libraries <- c("dada2", "DECIPHER", "purrr", "ape", "picante", 
+                        "pez", "phytools",
+                        "vegan", "adephylo", 
+                        "phylobase", "geiger", 
+                        "mvMORPH", "OUwie", 
+                        "hisse", "BAMMtools",
+                        "phylosignal", "Biostrings",
+                        "devtools","ggplot2", 
+                        "kableExtra", "betapart", "gridExtra",
+                        "reshape2", "ggtree", "car", "egg", "tidyverse", "dplyr",
+                        "hrbrthemes", "readxl", "ggrepel", "pracma", "scales", "ggpubr", "lsmeans", "multcomp",
+                        "phyloseq", "gplots", "tidytree", "ggridges", "UpSetR", "aplot", "tidyr", "outliers",
+                        "rstatix")
+lapply(required.libraries, require, character.only = TRUE)
+
+## generate phylo tree and bubble plots
+# First, we need to read in the data. For this figure, we need the ASV table, metadata, and phylogenetic tree.
+count_table <- as.data.frame(t(read.table('10.final/clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')))
+meta_table <- read.table('10.final/clean_contaminant_removed_ethanol_comparison_heDNA_metadata.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
+phylo_tree <- read.nexus('10.final/contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs-tree.tree')
+
+# We need to group the replicates for each treatment per sponge specimen. 
+# This needs to be done both for number of detections, as well as total read count.
+pres_abs_count_table <- as.data.frame(lapply(count_table, function(x) ifelse(x > 0, 1, 0)), row.names = row.names(count_table))
+meta_table$sponge_treatment <- paste(meta_table$sponge_id, meta_table$method, sep = '_')
+pres_abs_count_table_grouped <- aggregate(pres_abs_count_table, by = list(meta_table$sponge_treatment), FUN = sum)
+mean_count_table_grouped <- aggregate(count_table, by = list(meta_table$sponge_treatment), FUN = mean)
+
+# Create the phylogenetic tree plot as a ggtree object to extract the order of tip labels
+# Also create another phylogenetic tree plot without labels for plotting later
+p <- ggtree(phylo_tree) + geom_tiplab()
+correct_label_order <- get_taxa_name(p)
+p2 <- ggtree(phylo_tree)
+
+# Reformat the number of detections df and read count df for bubble plot
+pres_abs_bubble <- pres_abs_count_table_grouped
+rownames(pres_abs_bubble) <- pres_abs_bubble$Group.1
+pres_abs_bubble <- pres_abs_bubble[,-1]
+pres_abs_bubble <- as.data.frame(t(pres_abs_bubble))
+sms_melt_pres_abs <- melt(as.matrix(pres_abs_bubble))
+sms_melt_pres_abs <- sms_melt_pres_abs %>% rename(pres_abs_value = value)
+raw_bubble <- mean_count_table_grouped
+rownames(raw_bubble) <- raw_bubble$Group.1
+raw_bubble <- raw_bubble[,-1]
+raw_bubble[raw_bubble == 0] <- NA
+raw_bubble <- log(as.data.frame(t(raw_bubble)))
+sms_melt_raw <- melt(as.matrix(raw_bubble))
+sms_melt_raw <- sms_melt_raw %>% rename(raw_value = value)
+sms_melt <- merge(sms_melt_pres_abs, sms_melt_raw)
+
+# Create a bubble plot using the number of detections
+fig <- ggplot(sms_melt, aes(x = Var2, y = Var1)) + 
+  geom_point(aes(size = pres_abs_value, fill = raw_value), alpha = 0.75, shape = 21) +
+  scale_size_continuous(limits = c(1, 10), range = c(1,5), breaks = c(1,5,10)) + 
+  theme_minimal() +
+  theme(
+    legend.position = 'right',
+    text = element_text(color = 'grey40'),
+    axis.title = element_blank(),
+    axis.text.x = element_blank()
+  ) + 
+  scale_fill_viridis_c(limits = c(0,10), oob = scales::squish) +
+  scale_y_discrete(limits = rev(correct_label_order)) +
+  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+                              'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
+                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+fig
+
+## generate total number of detected species barplot
+# We need to reformat the data
+sum_count_table_grouped <- aggregate(count_table, by = list(meta_table$sponge_treatment), FUN = sum)
+rownames(sum_count_table_grouped) <- sum_count_table_grouped$Group.1
+sum_count_table_grouped <- sum_count_table_grouped[, -1]
+sum_count_table_grouped[sum_count_table_grouped > 0] <- 1
+total_species_count <- as.data.frame(rowSums(sum_count_table_grouped))
+colnames(total_species_count) <- 'species_count'
+total_species_count['group'] <- rownames(total_species_count)
+total_species_count['group_color'] <- c('centrifugation', 'evaporation', 'filtration10', 'filtration1', 'precipitation', 'tissue', 'tissue_wicked',
+                                  'centrifugation', 'evaporation', 'filtration10', 'filtration1', 'precipitation', 'tissue', 'tissue_wicked',
+                                  'centrifugation', 'evaporation', 'filtration10', 'filtration1', 'precipitation', 'tissue', 'tissue_wicked')
+
+# Set sample colours and generate plot
+sample_colors <- c("centrifugation" = "#ce7c7d", "filtration1" = "#c4d8e1", "evaporation" = "#f2d379", "filtration10" = "#4e6c82", 
+                   "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
+bar_total <- ggplot(total_species_count, aes(x = group, y = species_count, fill = group_color)) +
+  geom_bar(stat = 'identity') +
+  geom_text(aes(label = species_count), position = position_dodge(width = 0.9), vjust = -0.25) +
+  scale_fill_manual(values = sample_colors) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.text.x = element_blank(),
+        axis.line.y = element_line(colour = "black"), axis.ticks.x = element_blank(),
+        axis.title = element_blank()) +
+  scale_y_continuous(limits = c(0,30), expand = c(0, 0)) +
+  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+                              'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
+                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+bar_total
+
+## generate alpha diversity boxplot
+# Format data to fit the analysis
+is.binary(phylo_tree)
+is.ultrametric(phylo_tree)
+all(sort(phylo_tree$tip.label) == sort(colnames(count_table)))
+all(phylo_tree$tip.label == colnames(count_table))
+phylo_tree_clean <- match.phylo.comm(phy = phylo_tree, comm = count_table)$phy
+alpha_count_table_clean <- match.phylo.comm(phy = phylo_tree, comm = count_table)$comm
+all(phylo_tree_clean$tip.label == colnames(alpha_count_table_clean))
+plot(phylo_tree_clean, cex = 0.4)
+
+# Calculate Faith's PD and species richness (SR)
+alpha.PD <- pd(samp = alpha_count_table_clean, tree = phylo_tree_clean, include.root = FALSE)
+cor.test(alpha.PD$PD, alpha.PD$SR)
+plot(alpha.PD$PD, alpha.PD$SR, xlab = 'Phylogenetic Diversity', ylab = 'Species Richness', pch = 16)
+
+# Combine metadata with PD and SR calculations
+alpha.PD$ID <- rownames(alpha.PD)
+meta_table$ID <- rownames(meta_table)
+alpha.PD.meta <- merge(alpha.PD, meta_table, by = 'ID')
+
+# Prepare for plotting
+alpha.PD.meta$method <- factor(alpha.PD.meta$method, levels = c("centrifugation", "filter_1ml", "evaporation", "filter_10ml", "precipitation", "tissue", "tissue_wicked"))
+alpha.PD.meta$sponge_id <- factor(alpha.PD.meta$sponge_id, levels = c('hexactinellida', 'calcarea', 'demosponge'))
+sample_colors <- c("centrifugation" = "#ce7c7d", "filter_1ml" = "#c4d8e1", "evaporation" = "#f2d379", "filter_10ml" = "#4e6c82", "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
+sample_shape <- c('hexactinellida' = 22, 'calcarea' = 21, 'demosponge' = 24)
+
+# Plot SR boxplot
+boxplot.SR <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = SR, shape = sponge_id)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.8) +
+  geom_point(aes(shape = sponge_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 4, colour = 'black') +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none', axis.title.x = element_blank(),
+        axis.title.y = element_blank(), axis.text.x = element_text(angle = 90)) +
+  scale_fill_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  scale_y_continuous(limits = c(0,25)) +
+  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+                             'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
+                             'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+boxplot.SR
+
+# Plot PD boxplot
+boxplot.PD <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = PD, shape = sponge_id)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.8) +
+  geom_point(aes(shape = sponge_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 4, colour = 'black') +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none', axis.title.x = element_blank(),
+        axis.title.y = element_blank(), axis.text.x = element_text(angle = 90)) +
+  scale_fill_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  scale_y_continuous(limits = c(0,4)) +
+  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+                              'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
+                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+boxplot.PD
+
+boxplot.PD.nox <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = PD, shape = sponge_id)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.8) +
+  geom_point(aes(shape = sponge_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 2, colour = 'black') +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none', axis.title.x = element_blank(),
+        axis.title.y = element_blank(), axis.text.x = element_blank()) +
+  scale_fill_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  scale_y_continuous(limits = c(0,4)) +
+  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+                              'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
+                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+boxplot.PD.nox
+
+# Run ANOVA on SR per sponge specimen
+
+meta_table <- read.table('10.final/ethanol_comparison_heDNA_metadata.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
+meta_table <- meta_table[meta_table$sponge_id != 'negative', ]
+meta_table$sponge_treatment <- paste(meta_table$sponge_id, meta_table$method, sep = '_')
+meta_table$ID <- rownames(meta_table)
+alpha.PD.meta <- merge(alpha.PD, meta_table, by = 'ID', all.y = TRUE)
+alpha.PD.meta$PD[is.na(alpha.PD.meta$PD)] <- 0
+alpha.PD.meta$SR[is.na(alpha.PD.meta$SR)] <- 0
+
+sponge_specimens <- c('calcarea', 'hexactinellida', 'demosponge')
+for (specimen in sponge_specimens) {
+  print(paste('analysing SR data for', specimen))
+  anova.SR <- aov(SR ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ])
+  print(summary(anova.SR))
+  print(TukeyHSD(anova.SR))
+  hist(anova.SR$residuals, main = paste('Histogram of SR residuals for', specimen), xlab = 'Residuals')
+  print(leveneTest(SR ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ]))
+}
+
+# Run ANOVA on PD per sponge specimen
+sponge_specimens <- c('calcarea', 'hexactinellida', 'demosponge')
+for (specimen in sponge_specimens) {
+  print(paste('analysing PD data for', specimen))
+  anova.PD <- aov(PD ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ])
+  print(summary(anova.PD))
+  print(TukeyHSD(anova.PD))
+  hist(anova.PD$residuals, main = paste('Histogram of PD residuals for', specimen), xlab = 'Residuals')
+  print(leveneTest(PD ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ]))
+}
+
+## combine all plots
+fig %>% insert_bottom(bar_total, height = 0.3) %>% insert_left(p2, width = 0.3) %>% insert_bottom(boxplot.PD, height = 0.6)
+fig %>% insert_bottom(bar_total, height = 0.4) %>% insert_left(p2, width = 0.3) %>% insert_bottom(boxplot.PD.nox, height = 0.4)
+```
+
 ### 8.3 Beta diversity
 
 ## 9. Map of Antarctica
