@@ -6,19 +6,17 @@ This GitHub repository serves as a comprehensive guide for the bioinformatic and
 
 ## 2. Experimental design
 
-The primary objective of this experiment is to assess the possibility of non-destructive heDNA recovery from museum-stored marine sponge specimens through DNA extraction from the ethanol in which specimens are stored. To verify non-destructive sampling as a suitable methodological choice for specimens across the phylum Porifera, we selected one specimen from the three major classes due to differing internal skeletal structures, including Hexactinellida (hexagonal silica spicules), Demospongiae (spongin), and Calcarea (calcium carbonate spicules). A detailed list with metadata for each specimen can be found below.
+The primary objective of this experiment is to assess the possibility of non-destructive heDNA recovery from museum-stored marine sponge specimens through DNA extraction from the ethanol in which specimens are stored. To verify non-destructive sampling as a suitable methodological choice for specimens across the phylum Porifera, we selected specimens from the two major classes due to differing internal skeletal structures, including Hexactinellida (hexagonal silica spicules) and Demospongiae (spongin). A detailed list with metadata for each specimen can be found below.
 
 | Cat. # | Class | Species | Date | Latitude | Longitude | Depth |
 | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| 35574 | Calcarea | Petrobiona sp. | 09/02/2008 | -73.1245 | 174.3205 | 321 |
-| 37535 | Demospongia | Homaxinella sp. | 24/02/2008 | -72.0093 | 173.2238 | 850 |
+| 35574 | Demospongiae | Acanthochaetetes sp. | 09/02/2008 | -73.1245 | 174.3205 | 321 |
+| 37535 | Demospongiae | Homaxinella sp. | 24/02/2008 | -72.0093 | 173.2238 | 850 |
 | 37124 | Hexactinellida | Rossella fibulata | 21/02/2008 | -72.5903 | 175.3423 | 479 |
 
 For each sepcimen, DNA was extracted from 10 tissue biopsies without removal of excess ethanol and 10 tissue biopsies whereby excess ethanol was removed by absorbance of lint-free kimwipes. To test heDNA recovery from ethanol, we extracted DNA through (1) 1 ml evaporation, (2) 1 ml centrifugation, (3) 1 ml precipitation, (4) 1 ml filtration, and (5) 10 ml filtration. For each non-destructive method, 10 replicates were processed to enable statistical comparison between treatments.
 
 After DNA extraction, the total DNA concentration was measured via Qubit, while DNA purity was assessed by investigating the 260/280 and 260/230 absorbence ratios measured via Denovix. To amplify heDNA signals associated with fish species (Fish16SF: 5’-GACCCTATGGAGCTTTAGAC-3’; Fish16S2R: 5’-CGCTGTTATCCCTADRGTAACT-3’), we employed a metabarcoding approach. This primer set was chosen over the MiFish-U primer set, as it does not co-amplify human DNA, a potential contaminant signal for museum-stored specimens that have been handled repeatedly for morphometric analysis.
-
-**While we're unsure at this stage, genome sequencing was also conducted on the ONT platform to assess the possibility of retrieving (mito) genome sequences from non-destructive methods. However, we'll have to wait until we receive the results later on if this will be included in the manuscript.**
 
 ## 3. Bioinformatic analysis
 
@@ -26,7 +24,7 @@ For the bioinformatic analysis of the metabarcoding data, we will employ a stand
 
 ## 3.1 Starting files
 
-For this project, we need six files for the bioinformatic analysis, including three sequence files and three metadata files. File names are listed below. All files (sequencing and metadata) can be downloaded from [figshare](https://figshare.com/account/home#/projects/184573).
+For this project, we need six files for the bioinformatic analysis, including three sequence files and three metadata files. File names are listed below. All files (sequencing and metadata) can be downloaded from [figshare](https://figshare.com/projects/MarsdenObjective1EthanolComparison/184573).
 
 Sequence file names:
 
@@ -849,7 +847,7 @@ raw_metadata_table$total_read_count_filtered <- colSums(count_table)[rownames(ra
 ## plot total read count in decreasing order
 omit_negative_raw_metadata_table <- raw_metadata_table %>%
   filter(sponge_id != "negative")
-sample_colors <- c("calcarea" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
+sample_colors <- c("clionaida" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
 ggplot(omit_negative_raw_metadata_table, aes(x = reorder(row.names(omit_negative_raw_metadata_table), -total_read_count_filtered), y = total_read_count_filtered, fill = sponge_id)) +
   geom_bar(stat = "identity") +
   labs(x = "Sponge ID", y = "Total Read Count") +
@@ -927,7 +925,7 @@ subset_data$method <- as.factor(subset_data$method)
 colour_palette <- c("centrifugation" = "#ce7c7d", "filter_1ml" = "#c4d8e1", "evaporation" = "#f2d379", "filter_10ml" = "#4e6c82", "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
 p <- ggplot(subset_data, aes(x = total_read_count_filtered, y = total_observations_filtered, color = method)) +
   geom_point(aes(shape = sponge_id), size = 3) +
-  scale_shape_manual(values = c("demosponge" = 15, "hexactinellida" = 18, "calcarea" = 16)) +
+  scale_shape_manual(values = c("demosponge" = 15, "hexactinellida" = 18, "clionaida" = 16)) +
   scale_color_manual(values = colour_palette) +
   geom_smooth(aes(y = predicted), method = "glm", method.args = list(family = "poisson"), 
               se = TRUE, linetype = 'dotdash', color = "black", linewidth = 0.3) +
@@ -983,7 +981,7 @@ metadata_table$method <- factor(metadata_table$method, levels = c("tissue", "tis
 ampvis_df <- amp_load(count_table, metadata_table)
 
 ## generate rarefaction curves
-sample_colors <- c("calcarea" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
+sample_colors <- c("clionaida" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
 rarefaction_curves <- amp_rarecurve(ampvis_df, stepsize = 100, color_by = 'sponge_id') +
   ylab('Number of observed ZOTUs') +
   theme_classic() +
@@ -1422,7 +1420,7 @@ fig <- ggplot(sms_melt, aes(x = Var2, y = Var1)) +
   ) + 
   scale_fill_viridis_c(limits = c(0,10), oob = scales::squish) +
   scale_y_discrete(limits = rev(correct_label_order)) +
-  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
                               'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
 fig
@@ -1452,7 +1450,7 @@ bar_total <- ggplot(total_species_count, aes(x = group, y = species_count, fill 
         axis.line.y = element_line(colour = "black"), axis.ticks.x = element_blank(),
         axis.title = element_blank()) +
   scale_y_continuous(limits = c(0,30), expand = c(0, 0)) +
-  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
                               'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
 bar_total
@@ -1480,9 +1478,9 @@ alpha.PD.meta <- merge(alpha.PD, meta_table, by = 'ID')
 
 # Prepare for plotting
 alpha.PD.meta$method <- factor(alpha.PD.meta$method, levels = c("centrifugation", "filter_1ml", "evaporation", "filter_10ml", "precipitation", "tissue", "tissue_wicked"))
-alpha.PD.meta$sponge_id <- factor(alpha.PD.meta$sponge_id, levels = c('hexactinellida', 'calcarea', 'demosponge'))
+alpha.PD.meta$sponge_id <- factor(alpha.PD.meta$sponge_id, levels = c('hexactinellida', 'clionaida', 'demosponge'))
 sample_colors <- c("centrifugation" = "#ce7c7d", "filter_1ml" = "#c4d8e1", "evaporation" = "#f2d379", "filter_10ml" = "#4e6c82", "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
-sample_shape <- c('hexactinellida' = 22, 'calcarea' = 21, 'demosponge' = 24)
+sample_shape <- c('hexactinellida' = 22, 'clionaida' = 21, 'demosponge' = 24)
 
 # Plot SR boxplot
 boxplot.SR <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = SR, shape = sponge_id)) +
@@ -1494,7 +1492,7 @@ boxplot.SR <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = SR, shape = sp
   scale_fill_manual(values = sample_colors) +
   scale_shape_manual(values = sample_shape) +
   scale_y_continuous(limits = c(0,25)) +
-  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
                              'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
 boxplot.SR
@@ -1509,7 +1507,7 @@ boxplot.PD <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = PD, shape = sp
   scale_fill_manual(values = sample_colors) +
   scale_shape_manual(values = sample_shape) +
   scale_y_continuous(limits = c(0,4)) +
-  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
                               'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
 boxplot.PD
@@ -1523,7 +1521,7 @@ boxplot.PD.nox <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = PD, shape 
   scale_fill_manual(values = sample_colors) +
   scale_shape_manual(values = sample_shape) +
   scale_y_continuous(limits = c(0,4)) +
-  scale_x_discrete(limits = c('calcarea_centrifugation', 'calcarea_evaporation', 'calcarea_filter_1ml', 'calcarea_filter_10ml', 'calcarea_precipitation', 'calcarea_tissue', 'calcarea_tissue_wicked',
+  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
                               'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
 boxplot.PD.nox
@@ -1538,7 +1536,7 @@ alpha.PD.meta <- merge(alpha.PD, meta_table, by = 'ID', all.y = TRUE)
 alpha.PD.meta$PD[is.na(alpha.PD.meta$PD)] <- 0
 alpha.PD.meta$SR[is.na(alpha.PD.meta$SR)] <- 0
 
-sponge_specimens <- c('calcarea', 'hexactinellida', 'demosponge')
+sponge_specimens <- c('clionaida', 'hexactinellida', 'demosponge')
 for (specimen in sponge_specimens) {
   print(paste('analysing SR data for', specimen))
   anova.SR <- aov(SR ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ])
@@ -1549,7 +1547,7 @@ for (specimen in sponge_specimens) {
 }
 
 # Run ANOVA on PD per sponge specimen
-sponge_specimens <- c('calcarea', 'hexactinellida', 'demosponge')
+sponge_specimens <- c('clionaida', 'hexactinellida', 'demosponge')
 for (specimen in sponge_specimens) {
   print(paste('analysing PD data for', specimen))
   anova.PD <- aov(PD ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ])
@@ -1613,8 +1611,8 @@ sponge_dat <- read.csv("specimen_metadata2.csv")
 sponge_pts <- project(vect(sponge_dat, geom = c("Longitude1", "Latitude1"), keepgeom = TRUE, crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"), ATAshp)
 grat <- project(vect(sf::st_graticule(lon=seq(-175, 180, 5), lat = seq(-85, -60, 5), ndiscr = 5000)), ATAshp)
 ibsco <- rast("add_coastline_high_res_polygon_v7.2/IBCSO_v2_ice-surface.nc")
-sample_colors <- c("Calcarea" = "lightgoldenrod", "Demospongiae" = "steelblue", "Hexactinellida" = "firebrick")
-spp_names <- c(expression(italic("Calcarea")), expression(italic("Demospongiae")), expression(italic("Hexactinellida")))
+sample_colors <- c("clionaida" = "lightgoldenrod", "Demospongiae" = "steelblue", "Hexactinellida" = "firebrick")
+spp_names <- c(expression(italic("clionaida")), expression(italic("Demospongiae")), expression(italic("Hexactinellida")))
 sponge_pts$Catalog.Number <- as.factor(sponge_pts$Catalog.Number)
 xmn <- -1000000
 xmx <- 1500000
@@ -1642,7 +1640,7 @@ RSR_plot <- ggplot() +
   geom_spatvector(data = ATAshp, alpha = 1, fill = ATAshp$col, col = 'grey20') + 
   new_scale_fill() + 
   geom_spatvector(data = sponge_pts, aes(shape = Class, fill = Class), alpha = 1, size = 5, stroke = 0.5) + 
-  scale_fill_manual(values = sample_colors, labels = c("Calcarea", "Demospongiae", "Hexactinellida") , name = "Sponge Class") +
+  scale_fill_manual(values = sample_colors, labels = c("clionaida", "Demospongiae", "Hexactinellida") , name = "Sponge Class") +
   guides(fill = guide_legend(override.aes = list(pch=21))) + 
   scale_shape_manual(values = c(21, 22, 23)) + 
   scale_x_continuous(breaks = seq(-180, 180, by = 10)) + 
