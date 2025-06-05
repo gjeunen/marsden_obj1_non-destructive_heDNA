@@ -1,20 +1,18 @@
-# Marsden objective 1: non-destructive heDNA
-
 ## 1. Introduction
 
 This GitHub repository serves as a comprehensive guide for the bioinformatic and statistical analysis of the ethanol comparison project, associated with the Marsden Fast-Start funding MFP-UOO002116.
 
 ## 2. Experimental design
 
-The primary objective of the experiment is to assess the possibility of non-destructive heDNA recovery from museum-stored marine sponge specimens through DNA extraction from the ethanol in which specimens are stored. To verify non-destructive sampling as a suitable methodological choice for specimens across the phylum Porifera, we selected specimens from the two major classes due to differing internal skeletal structures, including Hexactinellida (hexagonal silica spicules) and Demospongiae (spongin). A detailed list with metadata for each specimen can be found below.
+The primary objective of this experiment is to assess the possibility of non-destructive heDNA recovery from museum-stored specimens through DNA extraction from the ethanol in which specimens are stored. To assess the suitability of non-destructive sampling across filter-feeding taxa, three museum specimens were selected. Two represented major Porifera classes with differing internal skeletal structures: one species of Demospongiae (spongin, sometimes with siliceous spicules) and one species of Hexactinellida (hexagonal silica spicules). The third specimen belonged to the phylum Bryozoa, a filter-feeding group not previously evaluated as a natural eDNA sampler. A detailed list with metadata for each specimen can be found below.
 
-| Cat. # | Class | Species | Date | Latitude | Longitude | Depth |
-| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| 35574 | Demospongiae | Acanthochaetetes sp. | 09/02/2008 | -73.1245 | 174.3205 | 321 |
-| 37535 | Demospongiae | Homaxinella sp. | 24/02/2008 | -72.0093 | 173.2238 | 850 |
-| 37124 | Hexactinellida | Rossella fibulata | 21/02/2008 | -72.5903 | 175.3423 | 479 |
+| Cat. # | Phylum   | Class          | Date       | Latitude | Longitude | Depth |
+| :----- | :------- | :------------- | :--------- | :------- | :-------- | :---- |
+| 35574  | Bryozoa  | Stenolaemata   | 09/02/2008 | -73.1245 | 174.3205  | 321   |
+| 37535  | Porifera | Demospongiae   | 24/02/2008 | -72.0093 | 173.2238  | 850   |
+| 37124  | Porifera | Hexactinellida | 21/02/2008 | -72.5903 | 175.3423  | 479   |
 
-For each sepcimen, DNA was extracted from 10 tissue biopsies without removal of excess ethanol and 10 tissue biopsies whereby excess ethanol was removed by absorbance of lint-free kimwipes. To test heDNA recovery from ethanol, we extracted DNA through (1) 1 ml evaporation, (2) 1 ml centrifugation, (3) 1 ml precipitation, (4) 1 ml filtration, and (5) 10 ml filtration. For each non-destructive method, 10 replicates were processed to enable statistical comparison between treatments.
+For each specimen, DNA was extracted from 10 tissue biopsies without removal of excess ethanol and 10 tissue biopsies whereby excess ethanol was removed by absorbance of lint-free kimwipes. To test heDNA recovery from ethanol, we extracted DNA through (1) 1 ml evaporation, (2) 1 ml centrifugation, (3) 1 ml precipitation, (4) 1 ml filtration, and (5) 10 ml filtration. For each method, 10 replicates were processed to enable statistical comparison between treatments.
 
 After DNA extraction, the total DNA concentration was measured via Qubit, while DNA purity was assessed by investigating the 260/280 and 260/230 absorbence ratios measured via Denovix. To amplify heDNA signals associated with fish species (Fish16SF: 5’-GACCCTATGGAGCTTTAGAC-3’; Fish16S2R: 5’-CGCTGTTATCCCTADRGTAACT-3’), we employed a metabarcoding approach. This primer set was chosen over the MiFish-U primer set, as it does not co-amplify human DNA, a potential contaminant signal for museum-stored specimens that have been handled repeatedly for morphometric analysis.
 
@@ -142,7 +140,7 @@ fastqc 6.filtered/ethanol_comparison_heDNA_combined_filtered.fastq -o 7.fastqc_p
 
 ### 3.5 Dereplication
 
-We will now use the fasta file to dereeplicate the data using VSEARCH, i.e., find unique sequences.
+We will now use the fasta file to dereplicate the data using VSEARCH, i.e., find unique sequences.
 
 ```{code-block} bash
 mkdir 8.dereplication
@@ -289,7 +287,7 @@ We can now clean the database up through various parameters.
 crabs seq_cleanup -i dereplicate.tsv -o clean.tsv -e yes -s yes -na 1
 ```
 
-Before exporting to NCBI format (currently not supported in CRABS v0.1.9), we will first export the reference database to SINTAX format.
+Before exporting to NCBI format (currently not supported in CRABS v0.1.9, but supported in later versions), we will first export the reference database to SINTAX format.
 
 ```{code-block} bash
 crabs tax_format -i clean.tsv -o sintax.fasta -f sintax
@@ -499,7 +497,7 @@ The code above shows that only 1 out of 15 control samples (sample ID: qPCRNEG) 
 5   asv.21      Chionodraco myersi         4       102528   0.0039013733               51           24.285714
 ```
 
-Based on these results, we will remove asv.14 from the data set, since it is only present in a single sample with more than 1 read (2 out of 3 samples only positive as singletons). We will also filter the data based on an abundance threshold of 0.0039% or 1, depending on which is higher. After abundance threshold filtration, the qPCRNEG sample does not contain any reads, as well as 4 samples, including T74_1, T74_8, TW74_5, and TW74_6. All samples are tissue extractions from the calcereous sponge. Besides asv.14, which is deemed a contaminant, no additional ASVs sum to 0. Therefore, no additional ASVs are removed.
+Based on these results, we will remove asv.14 from the data set, since it is only present in a single sample with more than 1 read (2 out of 3 samples only positive as singletons). We will also filter the data based on an abundance threshold of 0.0039% or 1, depending on which is higher. After abundance threshold filtration, the qPCRNEG sample does not contain any reads, as well as 4 samples, including T74_1, T74_8, TW74_5, and TW74_6. All samples are tissue extractions from the Bryozoa. Besides asv.14, which is deemed a contaminant, no additional ASVs sum to 0. Therefore, no additional ASVs are removed.
 
 ### 5.4 Unassigned and off-target ASVs
 
@@ -552,9 +550,9 @@ write.table(taxonomy_table_clean, file = 'clean_contaminant_removed_alex_tombRai
 
 There are 8 ASVs that did not receive a taxonomic ID with the local BLAST search, including asv.32, asv.34, asv. 41, asv.44, asv.48, asv.84, asv.107, and asv.106. These 8 ASVs will be manually searched against the full NCBI database with an [online BLAST search](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome) with default settings. All BLAST results came back as "No significant similarity found." and all 8 ASVs will, therefore, be removed from the analysis.
 
-There are also 3 ASVs that received non-chordate taxonomic ID's, including asv.16, asv.17, and asv.25. These 3 ASVs will also be manually searched against the full NCBI database with an [online BLAST search](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome) to ensure ASVs do not belong to the phylum Chordata. Results for the online BLAST search agree with results obtained from the local BLAST search, with all 3 ASVs assigned to echinoderm taxa. Given that the primers are not optimised for echinoderms and amplification will potentially highly variable, we will remove these ASVs from the analysis.
+There are also 3 ASVs that received non-chordate taxonomic ID's, including asv.16, asv.17, and asv.25. These 3 ASVs will also be manually searched against the full NCBI database with an [online BLAST search](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome) to ensure ASVs do not belong to the phylum Chordata. Results for the online BLAST search agree with results obtained from the local BLAST search, with all 3 ASVs assigned to echinoderm taxa. Given that the primers are not optimised for echinoderms and amplification will potentially be highly variable, we will remove these ASVs from the analysis.
 
-Removal of these 11 ASVs resulted in a drop of an additional 21 samples. All samples are extractions from the calcereous sponge using different extraction techniques, including E74_3, E74_7, F174_1, F174_10, F174_6, F174_7, F174_8, P74_2, P74_3, T74_10, T74_3, T74_4, T74_5, T74_9, TW74_1, TW74_10, TW74_3, TW74_4, TW74_7, TW74_8, TW74_9.
+Removal of these 11 ASVs resulted in a drop of an additional 21 samples. All samples are extractions from the Bryozoa using different extraction techniques, including E74_3, E74_7, F174_1, F174_10, F174_6, F174_7, F174_8, P74_2, P74_3, T74_10, T74_3, T74_4, T74_5, T74_9, TW74_1, TW74_10, TW74_3, TW74_4, TW74_7, TW74_8, TW74_9.
 
 Once we have exported the updated files after data curation, we have generated the final files for statistical analysis and can move forward with the statistical analysis.
 
@@ -846,11 +844,11 @@ raw_metadata_table$total_read_count_filtered <- colSums(count_table)[rownames(ra
 
 ## plot total read count in decreasing order
 omit_negative_raw_metadata_table <- raw_metadata_table %>%
-  filter(sponge_id != "negative")
-sample_colors <- c("clionaida" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
-ggplot(omit_negative_raw_metadata_table, aes(x = reorder(row.names(omit_negative_raw_metadata_table), -total_read_count_filtered), y = total_read_count_filtered, fill = sponge_id)) +
+  filter(specimen_id != "negative")
+sample_colors <- c("bryozoa" = "lightgoldenrod", "demospecimen" = "steelblue", "hexactinellida" = "firebrick")
+ggplot(omit_negative_raw_metadata_table, aes(x = reorder(row.names(omit_negative_raw_metadata_table), -total_read_count_filtered), y = total_read_count_filtered, fill = specimen_id)) +
   geom_bar(stat = "identity") +
-  labs(x = "Sponge ID", y = "Total Read Count") +
+  labs(x = "Specimen ID", y = "Total Read Count") +
   theme_classic() +
   scale_fill_manual(values = sample_colors) +
   scale_y_log10(breaks = 10^(seq(0, 6, by = 2)), labels = scales::comma) +
@@ -865,7 +863,7 @@ cat("Standard error:", sd(omit_negative_raw_metadata_table$total_read_count_filt
 
 ## print basic stats of read distribution between groups
 omit_negative_raw_metadata_table %>%
-  group_by(sponge_id) %>%
+  group_by(specimen_id) %>%
   summarise(
     mean_count = mean(total_read_count_filtered, na.rm = TRUE),
     se_count = sd(total_read_count_filtered, na.rm = TRUE) / sqrt(n())
@@ -873,15 +871,15 @@ omit_negative_raw_metadata_table %>%
 
 ## run one-way ANOVA, test assumptions, and plot data for visualisation
 omit_negative_raw_metadata_table$total_read_count_filtered[is.na(omit_negative_raw_metadata_table$total_read_count_filtered)] <- 0
-model = lm(total_read_count_filtered ~ sponge_id, data = omit_negative_raw_metadata_table)
+model = lm(total_read_count_filtered ~ specimen_id, data = omit_negative_raw_metadata_table)
 Anova(model, type = 'II')
 anova(model)
 summary(model)
 hist(residuals(model), col = 'grey40')
 plot(fitted(model), residuals(model))
-ggplot(omit_negative_raw_metadata_table, aes(x = sponge_id, y = total_read_count_filtered)) +
+ggplot(omit_negative_raw_metadata_table, aes(x = specimen_id, y = total_read_count_filtered)) +
   geom_boxplot() +
-  labs(x = "Sponge ID", y = "Total Read Count") +
+  labs(x = "Specimen ID", y = "Total Read Count") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -920,16 +918,16 @@ summary(glm_model)
 subset_data$predicted <- predict(glm_model, type = "response")
 
 # plot results
-subset_data$sponge_id <- as.factor(subset_data$sponge_id)
+subset_data$specimen_id <- as.factor(subset_data$specimen_id)
 subset_data$method <- as.factor(subset_data$method)
 colour_palette <- c("centrifugation" = "#ce7c7d", "filter_1ml" = "#c4d8e1", "evaporation" = "#f2d379", "filter_10ml" = "#4e6c82", "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
 p <- ggplot(subset_data, aes(x = total_read_count_filtered, y = total_observations_filtered, color = method)) +
-  geom_point(aes(shape = sponge_id), size = 3) +
-  scale_shape_manual(values = c("demosponge" = 15, "hexactinellida" = 18, "clionaida" = 16)) +
+  geom_point(aes(shape = specimen_id), size = 3) +
+  scale_shape_manual(values = c("demospecimen" = 15, "hexactinellida" = 18, "bryozoa" = 16)) +
   scale_color_manual(values = colour_palette) +
   geom_smooth(aes(y = predicted), method = "glm", method.args = list(family = "poisson"), 
               se = TRUE, linetype = 'dotdash', color = "black", linewidth = 0.3) +
-  labs(color = "extraction treatment", shape = "sponge specimen", x = "Total read count", 
+  labs(color = "extraction treatment", shape = "specimen specimen", x = "Total read count", 
        y = "Number of observed ZOTUs") +
   theme_bw() +
   theme(legend.position = "bottom") +
@@ -981,8 +979,8 @@ metadata_table$method <- factor(metadata_table$method, levels = c("tissue", "tis
 ampvis_df <- amp_load(count_table, metadata_table)
 
 ## generate rarefaction curves
-sample_colors <- c("clionaida" = "lightgoldenrod", "demosponge" = "steelblue", "hexactinellida" = "firebrick")
-rarefaction_curves <- amp_rarecurve(ampvis_df, stepsize = 100, color_by = 'sponge_id') +
+sample_colors <- c("bryozoa" = "lightgoldenrod", "demospecimen" = "steelblue", "hexactinellida" = "firebrick")
+rarefaction_curves <- amp_rarecurve(ampvis_df, stepsize = 100, color_by = 'specimen_id') +
   ylab('Number of observed ZOTUs') +
   theme_classic() +
   scale_color_manual(values = sample_colors) +
@@ -1051,7 +1049,7 @@ for (col in setdiff(rownames(metadata_table), colnames(count_table))) {
 count_table[count_table > 0] <- 1
 
 ## generate format that can be read into iNEXT.3D (datatype = "incidence_raw" --> list of matrices)
-metadata_table$distinct <- paste(metadata_table$sponge_id, metadata_table$method, sep = "_")
+metadata_table$distinct <- paste(metadata_table$specimen_id, metadata_table$method, sep = "_")
 categories <- unique(metadata_table$distinct)
 matrix_list <- list(data = list())
 for (category in categories) {
@@ -1102,7 +1100,7 @@ nrow(count_table)
 ## average number of reads per sample
 raw_metadata_table$total_read_count <- colSums(count_table)[rownames(raw_metadata_table)]
 raw_metadata_table <- raw_metadata_table %>%
-  filter(sponge_id != 'negative')
+  filter(specimen_id != 'negative')
 mean(raw_metadata_table$total_read_count, na.rm = TRUE)
 sd(raw_metadata_table$total_read_count, na.rm = TRUE) / sqrt(sum(!is.na(raw_metadata_table$total_read_count)))
 
@@ -1110,9 +1108,9 @@ sd(raw_metadata_table$total_read_count, na.rm = TRUE) / sqrt(sum(!is.na(raw_meta
 raw_metadata_table$total_read_count_filled <- raw_metadata_table$total_read_count
 raw_metadata_table$total_read_count_filled[is.na(raw_metadata_table$total_read_count_filled)] <- 0
 sum <- summarySE(raw_metadata_table, measurevar = "total_read_count_filled",
-          groupvars = c("sponge_id", "method"))
+          groupvars = c("specimen_id", "method"))
 pd <- position_dodge(.2)
-ggplot(sum, aes(x = method, y = total_read_count_filled, color = sponge_id)) +
+ggplot(sum, aes(x = method, y = total_read_count_filled, color = specimen_id)) +
   geom_errorbar(aes(ymin = total_read_count_filled - se, ymax = total_read_count_filled + se), width = 0.2, size = 0.7, position = pd) +
   geom_point(shape = 15, size = 4, position = pd) +
   theme_bw() +
@@ -1123,15 +1121,15 @@ boxplot(total_read_count_filled ~ method,
         data = raw_metadata_table,
         xlab = "treatment",
         ylab = "read count")
-boxplot(total_read_count_filled ~ sponge_id,
+boxplot(total_read_count_filled ~ specimen_id,
         data = raw_metadata_table,
         xlab = "treatment",
         ylab = "read count")
-boxplot(total_read_count_filled ~ method:sponge_id,
+boxplot(total_read_count_filled ~ method:specimen_id,
         data = raw_metadata_table,
         xlab = "treatment",
         ylab = "read count")
-model = lm(total_read_count_filled ~ method + sponge_id + method:sponge_id,
+model = lm(total_read_count_filled ~ method + specimen_id + method:specimen_id,
            data = raw_metadata_table)
 Anova(model, type = 'II')
 anova(model)
@@ -1179,7 +1177,7 @@ write.nexus.data(alignment, 'clean_contaminant_removed_tombRaider_ethanol_compar
 
 ### 8.1 DNA concentration and purity
 
-Total DNA concentration and purity were measured for each eDNA extract using the Denovix DS-11. Measurements were recorded and stored in file `qubitAndDenovixMeasurementsAllSponges.xlsx`. The following R script reads in the file, parses the data to remove outliers, conducts the statistical analysis reported in the manuscript, and generates Figure 2 of the manuscript.
+Total DNA concentration and purity were measured for each eDNA extract using the Denovix DS-11. Measurements were recorded and stored in file `qubitAndDenovixMeasurementsAllspecimens.xlsx`. The following R script reads in the file, parses the data to remove outliers, conducts the statistical analysis reported in the manuscript, and generates Figure 2 of the manuscript.
 
 ```{code-block} R
 ## prepare R environment
@@ -1189,80 +1187,80 @@ required.libraries <- c("readxl", "ggplot2", "tidyr", "outliers", "ggpubr", "car
 lapply(required.libraries, require, character.only = TRUE)
 
 ## read data into R
-data <- read_xlsx('qubitAndDenovixMeasurementsAllSponges.xlsx', sheet = 'Sheet1', na = '')
+data <- read_xlsx('qubitAndDenovixMeasurementsAllspecimens.xlsx', sheet = 'Sheet1', na = '')
 
 ## wrangle data in correct format for statistical analysis and plotting
 colSums(is.na(data))
 data <- data[!is.na(data$Group), ]
 colSums(is.na(data))
-data$spongeID <- substr(data$Group, nchar(data$Group) -1, nchar(data$Group))
+data$specimen_id <- substr(data$Group, nchar(data$Group) -1, nchar(data$Group))
 data$treatment <- sub("^([^_]+)_.*$", "\\1", data$`Sample ID`)
 data <- data[which(data$treatment != 'FP'), ]
-data <- data[which(data$spongeID != '92'), ]
+data <- data[which(data$specimen_id != '92'), ]
 data <- data[which(data$Group != 'NEG'), ]
 str(data, width = 50, strict.width = 'cut')
 data$`Original Sample Conc.` <- as.numeric(data$`Original Sample Conc.`)
 str(data, width = 50, strict.width = 'cut')
 
 ## rename categorical variables for plotting
-data$spongeID <- dplyr::recode(data$spongeID, '24' = 'cat # 37124', '35' = 'cat # 37535', '74' = 'cat # 35574')
+data$specimen_id <- dplyr::recode(data$specimen_id, '24' = 'cat # 37124', '35' = 'cat # 37535', '74' = 'cat # 35574')
 data$treatment <- dplyr::recode(data$treatment, 'F0' = 'F10')
 
 ## identify and remove outliers across the whole data set
 data %>%
-  ggplot(aes(y = `Original Sample Conc.`, x = Group)) + labs(y = 'DNA conc.', x = 'sponge + treatment') +
+  ggplot(aes(y = `Original Sample Conc.`, x = Group)) + labs(y = 'DNA conc.', x = 'specimen + treatment') +
   geom_boxplot(fill = 'grey88')
 data %>%
-  ggplot(aes(y = `260/280`, x = Group)) + labs(y = '260/280', x = 'sponge + treatment') +
+  ggplot(aes(y = `260/280`, x = Group)) + labs(y = '260/280', x = 'specimen + treatment') +
   geom_boxplot(fill = 'grey88')
 grubbs.test(data$`260/280`, type = 11)
 data[data$`260/280` < -10 | data$`260/280` > 10, c("Sample ID", "260/280")]
 data$`260/280`[data$`260/280` < -10 | data$`260/280` > 10] <- NA
 data %>%
   na.omit() %>%
-  ggplot(aes(y = `260/280`, x = Group)) + labs(y = '260/280', x = 'sponge + treatment') +
+  ggplot(aes(y = `260/280`, x = Group)) + labs(y = '260/280', x = 'specimen + treatment') +
   geom_boxplot(fill = 'grey88')
 data %>%
-  ggplot(aes(y = `260/230`, x = Group)) + labs(y = '260/230', x = 'sponge + treatment') +
+  ggplot(aes(y = `260/230`, x = Group)) + labs(y = '260/230', x = 'specimen + treatment') +
   geom_boxplot(fill = 'grey88')
 grubbs.test(data$`260/230`, type = 11)
 data[data$`260/230` < -5 | data$`260/230` > 5, c("Sample ID", "260/230")]
 data$`260/230`[data$`260/230` < -4 | data$`260/230` > 4] <- NA
 data %>%
   na.omit() %>%
-  ggplot(aes(y = `260/230`, x = Group)) + labs(y = '260/230', x = 'sponge + treatment') +
+  ggplot(aes(y = `260/230`, x = Group)) + labs(y = '260/230', x = 'specimen + treatment') +
   geom_boxplot(fill = 'grey88')
 
 ## check for ANOVA assumptions 
-## (easiest to do this with for loops, as we need to test for three sponges and three measurements)
+## (easiest to do this with for loops, as we need to test for three specimens and three measurements)
 ## normality of residuals, homogeneity of the response variable, and unbalanced design
-spongeIDs <- c("cat # 37124", "cat # 37535", "cat # 35574")
+specimen_ids <- c("cat # 37124", "cat # 37535", "cat # 35574")
 factors <- c("Original Sample Conc.", "260/280", "260/230")
-for (sponge in spongeIDs) {
+for (specimen in specimen_ids) {
   for (factor in factors) {
-    subset_data <- data[data$spongeID == sponge, ]
+    subset_data <- data[data$specimen_id == specimen, ]
     aov_model <- aov(as.formula(paste0("`", factor, "` ~ as.factor(Group)")), data = subset_data)
     residuals_data <- residuals(aov_model)
     print(
       ggdensity(residuals_data,
-                main = paste("Density plot of residuals", sponge, "-", factor),
+                main = paste("Density plot of residuals", specimen, "-", factor),
                 xlab = "Residuals")
     )
     print(
       ggqqplot(residuals_data,
-               main = paste("Q-Q plot of residuals", sponge, "-", factor))
+               main = paste("Q-Q plot of residuals", specimen, "-", factor))
     )
     hist(residuals_data,
-         main = paste("Histogram of residuals", sponge, "-", factor),
+         main = paste("Histogram of residuals", specimen, "-", factor),
          xlab = "Residuals", breaks = 20, col = "lightblue", border = "black")
     shapiro_test <- shapiro.test(residuals_data)
-    print(paste("Shapiro-Wilk test for", sponge, "-", factor))
+    print(paste("Shapiro-Wilk test for", specimen, "-", factor))
     print(shapiro_test)
     levenes_test <- leveneTest(as.formula(paste0("`", factor, "` ~ as.factor(Group)")), data = subset_data)
     bartlett_test <- bartlett.test(as.formula(paste0("`", factor, "` ~ as.factor(Group)")), data = subset_data)
-    print(paste("Levene test for", sponge, "-", factor))
+    print(paste("Levene test for", specimen, "-", factor))
     print(levenes_test)
-    print(paste("Bartlett test for", sponge, "-", factor))
+    print(paste("Bartlett test for", specimen, "-", factor))
     print(bartlett_test)
     table(subset_data$Group[!is.na(subset_data[[factor]])])
   }
@@ -1274,31 +1272,31 @@ sum(data$`260/280` == 0, na.rm = TRUE) * 100 / nrow(data)
 sum(data$`260/230` == 0, na.rm = TRUE) * 100 / nrow(data)
 
 ## run non-parametric Welch's ANOVA given significant Shapiro-Wilk and levene's tests.
-## since we are mainly interested in differences between treatments and not between sponges,
-## we will run the ANOVA once per sponge specimen to simplify the analysis and interpretation of the results.
+## since we are mainly interested in differences between treatments and not between specimens,
+## we will run the ANOVA once per specimen specimen to simplify the analysis and interpretation of the results.
 # the non-parametric version of a one-way ANOVA for heteroscedasticity is the Welch's ANOVA,
 # followed by the non-parametric post hoc Games-Howell test.
 # I need to keep in mind to adjust the p-values using the Benjamini-Hochberg method afterwards.
-Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
-gh.24.dna <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37124'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
-Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
-gh.24.280 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37124'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
-Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
-gh.24.230 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37124'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
+Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
+gh.24.dna <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 37124'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
+Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
+gh.24.280 <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 37124'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
+Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 37124'), ])), Type='II', white.adjust = TRUE)
+gh.24.230 <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 37124'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
 
-Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
-gh.35.dna <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37535'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
-Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
-gh.35.280 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37535'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
-Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
-gh.35.230 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 37535'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
+Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
+gh.35.dna <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 37535'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
+Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
+gh.35.280 <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 37535'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
+Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 37535'), ])), Type='II', white.adjust = TRUE)
+gh.35.230 <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 37535'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
 
-Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
-gh.74.dna <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 35574'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
-Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
-gh.74.280 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 35574'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
-Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$spongeID == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
-gh.74.230 <- games_howell_test(data = na.omit(data[which(data$spongeID == 'cat # 35574'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
+Anova(lm(`Original Sample Conc.` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
+gh.74.dna <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 35574'), ]), formula = `Original Sample Conc.` ~ treatment, detailed = TRUE)
+Anova(lm(`260/280` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
+gh.74.280 <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 35574'), ]), formula = `260/280` ~ treatment, detailed = TRUE)
+Anova(lm(`260/230` ~ treatment, data = na.omit(data[which(data$specimen_id == 'cat # 35574'), ])), Type='II', white.adjust = TRUE)
+gh.74.230 <- games_howell_test(data = na.omit(data[which(data$specimen_id == 'cat # 35574'), ]), formula = `260/230` ~ treatment, detailed = TRUE)
 
 # Seventh, create three sets of box plots to visualise the differences between treatments for:
 # a) total DNA concentration
@@ -1310,11 +1308,11 @@ sample_shape <- c('cat # 35574' = 21, 'cat # 37124' = 22, 'cat # 37535' = 24)
 
 # Then, we will create the boxplot for total DNA concentration,
 # followed by the 260/280 ratio and the 160/230 ratio.
-dna_conc <- ggplot(data, aes(x = treatment, y = `Original Sample Conc.`, shape = spongeID)) +
+dna_conc <- ggplot(data, aes(x = treatment, y = `Original Sample Conc.`, shape = specimen_id)) +
   geom_boxplot(outlier.shape = NA, width = 0.8) +
-  geom_jitter(aes(fill = treatment, shape = spongeID), size = 3, width = 0.1, alpha = 0.6) +
+  geom_jitter(aes(fill = treatment, shape = specimen_id), size = 3, width = 0.1, alpha = 0.6) +
   scale_fill_manual(values = treatment_colors) +
-  facet_wrap(~spongeID, ncol = length(unique(data$spongeID))) +
+  facet_wrap(~specimen_id, ncol = length(unique(data$specimen_id))) +
   scale_y_log10(limits = c(0.0001,100)) +
   scale_shape_manual(values = sample_shape) +
   theme_bw() +
@@ -1322,11 +1320,11 @@ dna_conc <- ggplot(data, aes(x = treatment, y = `Original Sample Conc.`, shape =
         axis.ticks.x = element_blank(), axis.text.x = element_blank())
 dna_conc
 
-ratio_280 <- ggplot(na.omit(data), aes(x = treatment, y = `260/280`, shape = spongeID)) +
+ratio_280 <- ggplot(na.omit(data), aes(x = treatment, y = `260/280`, shape = specimen_id)) +
   geom_boxplot(outlier.shape = NA, width = 0.8) +
-  geom_jitter(aes(fill = treatment, shape = spongeID), size = 3, width = 0.1, alpha = 0.6) +
+  geom_jitter(aes(fill = treatment, shape = specimen_id), size = 3, width = 0.1, alpha = 0.6) +
   scale_fill_manual(values = treatment_colors) +
-  facet_wrap(~spongeID, ncol = length(unique(data$spongeID))) +
+  facet_wrap(~specimen_id, ncol = length(unique(data$specimen_id))) +
   scale_y_continuous(limits = c(-10,10)) +
   scale_shape_manual(values = sample_shape) +
   theme_bw() +
@@ -1334,11 +1332,11 @@ ratio_280 <- ggplot(na.omit(data), aes(x = treatment, y = `260/280`, shape = spo
         axis.ticks.x = element_blank(), axis.text.x = element_blank(), strip.text = element_blank())
 ratio_280
 
-ratio_230 <- ggplot(na.omit(data), aes(x = treatment, y = `260/230`, shape = spongeID)) +
+ratio_230 <- ggplot(na.omit(data), aes(x = treatment, y = `260/230`, shape = specimen_id)) +
   geom_boxplot(outlier.shape = NA, width = 0.8) +
-  geom_jitter(aes(fill = treatment, shape = spongeID), size = 3, width = 0.1, alpha = 0.6) +
+  geom_jitter(aes(fill = treatment, shape = specimen_id), size = 3, width = 0.1, alpha = 0.6) +
   scale_fill_manual(values = treatment_colors) +
-  facet_wrap(~spongeID, ncol = length(unique(data$spongeID))) +
+  facet_wrap(~specimen_id, ncol = length(unique(data$specimen_id))) +
   scale_y_continuous(limits = c(-5,5)) +
   scale_shape_manual(values = sample_shape) +
   theme_bw() +
@@ -1378,12 +1376,12 @@ count_table <- as.data.frame(t(read.table('10.final/clean_contaminant_removed_to
 meta_table <- read.table('10.final/clean_contaminant_removed_ethanol_comparison_heDNA_metadata.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
 phylo_tree <- read.nexus('10.final/contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs-tree.tree')
 
-# We need to group the replicates for each treatment per sponge specimen. 
+# We need to group the replicates for each treatment per specimen specimen. 
 # This needs to be done both for number of detections, as well as total read count.
 pres_abs_count_table <- as.data.frame(lapply(count_table, function(x) ifelse(x > 0, 1, 0)), row.names = row.names(count_table))
-meta_table$sponge_treatment <- paste(meta_table$sponge_id, meta_table$method, sep = '_')
-pres_abs_count_table_grouped <- aggregate(pres_abs_count_table, by = list(meta_table$sponge_treatment), FUN = sum)
-mean_count_table_grouped <- aggregate(count_table, by = list(meta_table$sponge_treatment), FUN = mean)
+meta_table$specimen_treatment <- paste(meta_table$specimen_id, meta_table$method, sep = '_')
+pres_abs_count_table_grouped <- aggregate(pres_abs_count_table, by = list(meta_table$specimen_treatment), FUN = sum)
+mean_count_table_grouped <- aggregate(count_table, by = list(meta_table$specimen_treatment), FUN = mean)
 
 # Create the phylogenetic tree plot as a ggtree object to extract the order of tip labels
 # Also create another phylogenetic tree plot without labels for plotting later
@@ -1420,14 +1418,14 @@ fig <- ggplot(sms_melt, aes(x = Var2, y = Var1)) +
   ) + 
   scale_fill_viridis_c(limits = c(0,10), oob = scales::squish) +
   scale_y_discrete(limits = rev(correct_label_order)) +
-  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
+  scale_x_discrete(limits = c('bryozoa_centrifugation', 'bryozoa_evaporation', 'bryozoa_filter_1ml', 'bryozoa_filter_10ml', 'bryozoa_precipitation', 'bryozoa_tissue', 'bryozoa_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
-                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+                              'demospecimen_centrifugation', 'demospecimen_evaporation', 'demospecimen_filter_1ml', 'demospecimen_filter_10ml', 'demospecimen_precipitation', 'demospecimen_tissue', 'demospecimen_tissue_wicked'))
 fig
 
 ## generate total number of detected species barplot
 # We need to reformat the data
-sum_count_table_grouped <- aggregate(count_table, by = list(meta_table$sponge_treatment), FUN = sum)
+sum_count_table_grouped <- aggregate(count_table, by = list(meta_table$specimen_treatment), FUN = sum)
 rownames(sum_count_table_grouped) <- sum_count_table_grouped$Group.1
 sum_count_table_grouped <- sum_count_table_grouped[, -1]
 sum_count_table_grouped[sum_count_table_grouped > 0] <- 1
@@ -1450,9 +1448,9 @@ bar_total <- ggplot(total_species_count, aes(x = group, y = species_count, fill 
         axis.line.y = element_line(colour = "black"), axis.ticks.x = element_blank(),
         axis.title = element_blank()) +
   scale_y_continuous(limits = c(0,30), expand = c(0, 0)) +
-  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
+  scale_x_discrete(limits = c('bryozoa_centrifugation', 'bryozoa_evaporation', 'bryozoa_filter_1ml', 'bryozoa_filter_10ml', 'bryozoa_precipitation', 'bryozoa_tissue', 'bryozoa_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
-                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+                              'demospecimen_centrifugation', 'demospecimen_evaporation', 'demospecimen_filter_1ml', 'demospecimen_filter_10ml', 'demospecimen_precipitation', 'demospecimen_tissue', 'demospecimen_tissue_wicked'))
 bar_total
 
 ## generate alpha diversity boxplot
@@ -1478,83 +1476,83 @@ alpha.PD.meta <- merge(alpha.PD, meta_table, by = 'ID')
 
 # Prepare for plotting
 alpha.PD.meta$method <- factor(alpha.PD.meta$method, levels = c("centrifugation", "filter_1ml", "evaporation", "filter_10ml", "precipitation", "tissue", "tissue_wicked"))
-alpha.PD.meta$sponge_id <- factor(alpha.PD.meta$sponge_id, levels = c('hexactinellida', 'clionaida', 'demosponge'))
+alpha.PD.meta$specimen_id <- factor(alpha.PD.meta$specimen_id, levels = c('hexactinellida', 'bryozoa', 'demospecimen'))
 sample_colors <- c("centrifugation" = "#ce7c7d", "filter_1ml" = "#c4d8e1", "evaporation" = "#f2d379", "filter_10ml" = "#4e6c82", "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
-sample_shape <- c('hexactinellida' = 22, 'clionaida' = 21, 'demosponge' = 24)
+sample_shape <- c('hexactinellida' = 22, 'bryozoa' = 21, 'demospecimen' = 24)
 
 # Plot SR boxplot
-boxplot.SR <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = SR, shape = sponge_id)) +
+boxplot.SR <- ggplot(alpha.PD.meta, aes(x = specimen_treatment, y = SR, shape = specimen_id)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.8) +
-  geom_point(aes(shape = sponge_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 4, colour = 'black') +
+  geom_point(aes(shape = specimen_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 4, colour = 'black') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none', axis.title.x = element_blank(),
         axis.title.y = element_blank(), axis.text.x = element_text(angle = 90)) +
   scale_fill_manual(values = sample_colors) +
   scale_shape_manual(values = sample_shape) +
   scale_y_continuous(limits = c(0,25)) +
-  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
+  scale_x_discrete(limits = c('bryozoa_centrifugation', 'bryozoa_evaporation', 'bryozoa_filter_1ml', 'bryozoa_filter_10ml', 'bryozoa_precipitation', 'bryozoa_tissue', 'bryozoa_tissue_wicked',
                              'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
-                             'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+                             'demospecimen_centrifugation', 'demospecimen_evaporation', 'demospecimen_filter_1ml', 'demospecimen_filter_10ml', 'demospecimen_precipitation', 'demospecimen_tissue', 'demospecimen_tissue_wicked'))
 boxplot.SR
 
 # Plot PD boxplot
-boxplot.PD <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = PD, shape = sponge_id)) +
+boxplot.PD <- ggplot(alpha.PD.meta, aes(x = specimen_treatment, y = PD, shape = specimen_id)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.8) +
-  geom_point(aes(shape = sponge_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 4, colour = 'black') +
+  geom_point(aes(shape = specimen_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 4, colour = 'black') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none', axis.title.x = element_blank(),
         axis.title.y = element_blank(), axis.text.x = element_text(angle = 90)) +
   scale_fill_manual(values = sample_colors) +
   scale_shape_manual(values = sample_shape) +
   scale_y_continuous(limits = c(0,4)) +
-  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
+  scale_x_discrete(limits = c('bryozoa_centrifugation', 'bryozoa_evaporation', 'bryozoa_filter_1ml', 'bryozoa_filter_10ml', 'bryozoa_precipitation', 'bryozoa_tissue', 'bryozoa_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
-                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+                              'demospecimen_centrifugation', 'demospecimen_evaporation', 'demospecimen_filter_1ml', 'demospecimen_filter_10ml', 'demospecimen_precipitation', 'demospecimen_tissue', 'demospecimen_tissue_wicked'))
 boxplot.PD
 
-boxplot.PD.nox <- ggplot(alpha.PD.meta, aes(x = sponge_treatment, y = PD, shape = sponge_id)) +
+boxplot.PD.nox <- ggplot(alpha.PD.meta, aes(x = specimen_treatment, y = PD, shape = specimen_id)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.8) +
-  geom_point(aes(shape = sponge_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 2, colour = 'black') +
+  geom_point(aes(shape = specimen_id, fill = method), position = position_jitterdodge(jitter.width = 3), size = 2, colour = 'black') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none', axis.title.x = element_blank(),
         axis.title.y = element_blank(), axis.text.x = element_blank()) +
   scale_fill_manual(values = sample_colors) +
   scale_shape_manual(values = sample_shape) +
   scale_y_continuous(limits = c(0,4)) +
-  scale_x_discrete(limits = c('clionaida_centrifugation', 'clionaida_evaporation', 'clionaida_filter_1ml', 'clionaida_filter_10ml', 'clionaida_precipitation', 'clionaida_tissue', 'clionaida_tissue_wicked',
+  scale_x_discrete(limits = c('bryozoa_centrifugation', 'bryozoa_evaporation', 'bryozoa_filter_1ml', 'bryozoa_filter_10ml', 'bryozoa_precipitation', 'bryozoa_tissue', 'bryozoa_tissue_wicked',
                               'hexactinellida_centrifugation', 'hexactinellida_evaporation', 'hexactinellida_filter_1ml', 'hexactinellida_filter_10ml', 'hexactinellida_precipitation', 'hexactinellida_tissue', 'hexactinellida_tissue_wicked',
-                              'demosponge_centrifugation', 'demosponge_evaporation', 'demosponge_filter_1ml', 'demosponge_filter_10ml', 'demosponge_precipitation', 'demosponge_tissue', 'demosponge_tissue_wicked'))
+                              'demospecimen_centrifugation', 'demospecimen_evaporation', 'demospecimen_filter_1ml', 'demospecimen_filter_10ml', 'demospecimen_precipitation', 'demospecimen_tissue', 'demospecimen_tissue_wicked'))
 boxplot.PD.nox
 
-# Run ANOVA on SR per sponge specimen
+# Run ANOVA on SR per specimen specimen
 
 meta_table <- read.table('10.final/ethanol_comparison_heDNA_metadata.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
-meta_table <- meta_table[meta_table$sponge_id != 'negative', ]
-meta_table$sponge_treatment <- paste(meta_table$sponge_id, meta_table$method, sep = '_')
+meta_table <- meta_table[meta_table$specimen_id != 'negative', ]
+meta_table$specimen_treatment <- paste(meta_table$specimen_id, meta_table$method, sep = '_')
 meta_table$ID <- rownames(meta_table)
 alpha.PD.meta <- merge(alpha.PD, meta_table, by = 'ID', all.y = TRUE)
 alpha.PD.meta$PD[is.na(alpha.PD.meta$PD)] <- 0
 alpha.PD.meta$SR[is.na(alpha.PD.meta$SR)] <- 0
 
-sponge_specimens <- c('clionaida', 'hexactinellida', 'demosponge')
-for (specimen in sponge_specimens) {
+specimen_specimens <- c('bryozoa', 'hexactinellida', 'demospecimen')
+for (specimen in specimen_specimens) {
   print(paste('analysing SR data for', specimen))
-  anova.SR <- aov(SR ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ])
+  anova.SR <- aov(SR ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$specimen_id == specimen, ])
   print(summary(anova.SR))
   print(TukeyHSD(anova.SR))
   hist(anova.SR$residuals, main = paste('Histogram of SR residuals for', specimen), xlab = 'Residuals')
-  print(leveneTest(SR ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ]))
+  print(leveneTest(SR ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$specimen_id == specimen, ]))
 }
 
-# Run ANOVA on PD per sponge specimen
-sponge_specimens <- c('clionaida', 'hexactinellida', 'demosponge')
-for (specimen in sponge_specimens) {
+# Run ANOVA on PD per specimen specimen
+specimen_specimens <- c('bryozoa', 'hexactinellida', 'demospecimen')
+for (specimen in specimen_specimens) {
   print(paste('analysing PD data for', specimen))
-  anova.PD <- aov(PD ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ])
+  anova.PD <- aov(PD ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$specimen_id == specimen, ])
   print(summary(anova.PD))
   print(TukeyHSD(anova.PD))
   hist(anova.PD$residuals, main = paste('Histogram of PD residuals for', specimen), xlab = 'Residuals')
-  print(leveneTest(PD ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$sponge_id == specimen, ]))
+  print(leveneTest(PD ~ as.factor(method), data = alpha.PD.meta[alpha.PD.meta$specimen_id == specimen, ]))
 }
 
 ## combine all plots
@@ -1563,6 +1561,500 @@ fig %>% insert_bottom(bar_total, height = 0.4) %>% insert_left(p2, width = 0.3) 
 ```
 
 ### 8.3 Beta diversity
+
+```{code-block} R
+## prepare R environment
+rm(list = ls())
+setwd("/Volumes/LaCie/2022_Marsden/objective_1/ethanolComparison")
+required.libraries <- c("ape", "picante", "ggplot2", "egg", "dplyr",
+                        "rioja", "riojaPlot", "pairwiseAdonis")
+lapply(required.libraries, require, character.only = TRUE)
+
+## read data into R
+count_table <- as.data.frame(t(read.table('10.final/clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')))
+meta_table <- read.table('10.final/clean_contaminant_removed_ethanol_comparison_heDNA_metadata.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
+phylo_tree <- read.nexus('10.final/contaminant_removed_tombRaider_ethanol_comparison_heDNA_asvs-tree.tree')
+
+## format meta_table
+meta_table$Sample <- rownames(meta_table)
+meta_table$specimen_treatment <- paste(meta_table$specimen_id, meta_table$method, sep = '_')
+
+## ensure taxa in tabe match tree tips
+is.binary(phylo_tree)
+is.ultrametric(phylo_tree)
+all(sort(phylo_tree$tip.label) == sort(colnames(count_table)))
+all(phylo_tree$tip.label == colnames(count_table))
+phylo_tree_clean <- match.phylo.comm(phy = phylo_tree, comm = count_table)$phy
+count_table_clean <- match.phylo.comm(phy = phylo_tree, comm = count_table)$comm
+all(phylo_tree_clean$tip.label == colnames(count_table_clean))
+
+## transform count table to presence-absence
+count_table_clean_pa <- as.data.frame((count_table_clean > 0) * 1)
+
+## calculate the uniFrac and Jaccard distance matrices
+total_unifrac_distance <- unifrac(count_table_clean_pa, phylo_tree_clean)
+total_jaccard_distance <- vegdist(count_table_clean_pa, method = "jaccard")
+
+## perform PCoA ordination on both distance matrices
+total_unifrac_pcoa <- wcmdscale(as.dist(total_unifrac_distance), eig = TRUE)
+total_jaccard_pcoa <- wcmdscale(as.dist(total_jaccard_distance), eig = TRUE)
+
+## format data for plotting
+total_unifrac_coords <- data.frame(total_unifrac_pcoa$points[, 1:2])
+total_unifrac_coords$Sample <- rownames(total_unifrac_coords)
+total_unifrac_coords <- merge(total_unifrac_coords, meta_table, by = 'Sample', all.y = TRUE)
+total_unifrac_coords$Dim1round <- round(total_unifrac_coords$Dim1, 2)
+total_unifrac_coords_chron <- data.frame(Dim1round = sort(unique(total_unifrac_coords$Dim1round), decreasing = TRUE))
+rownames(total_unifrac_coords_chron) <- seq_len(nrow(total_unifrac_coords_chron))
+total_unifrac_coords_data <- as.data.frame(table(total_unifrac_coords$Dim1round, total_unifrac_coords$specimen_treatment))
+colnames(total_unifrac_coords_data) <- c("Dim1round", "specimen_treatment", "count")
+total_unifrac_coords_data <- reshape(total_unifrac_coords_data, idvar = "Dim1round", timevar = "specimen_treatment", direction = "wide")
+total_unifrac_coords_data <- total_unifrac_coords_data[order(total_unifrac_coords_data$Dim1round, decreasing = TRUE), ]
+rownames(total_unifrac_coords_data) <- total_unifrac_coords_data$Dim1round
+total_unifrac_coords_data <- total_unifrac_coords_data[, -1]
+colnames(total_unifrac_coords_data) <- gsub("^count\\.", "", colnames(total_unifrac_coords_data))
+total_unifrac_coords_data_perc <- total_unifrac_coords_data
+total_unifrac_coords_data_perc <- t(apply(total_unifrac_coords_data_perc, 1, function(x){
+  row_sum <- sum(x)
+  if (row_sum > 0) {
+    return(x/row_sum*100)
+  } else {
+    return(rep(0, length(x)))
+  }
+}))
+total_unifrac_coords_data_perc <- as.data.frame(total_unifrac_coords_data_perc)
+colnames(total_unifrac_coords_data_perc) <- colnames(total_unifrac_coords_data)
+total_unifrac_coords_data_perc <- total_unifrac_coords_data_perc[c(1,2,4,3,5,6,7,15,16,18,17,19,20,21,8,9,11,10,12,13,14)]
+
+total_jaccard_coords <- data.frame(total_jaccard_pcoa$points[, 1:2])
+total_jaccard_coords$Sample <- rownames(total_jaccard_coords)
+total_jaccard_coords <- merge(total_jaccard_coords, meta_table, by = 'Sample', all.y = TRUE)
+total_jaccard_coords$Dim1round <- round(total_jaccard_coords$Dim1, 2)
+total_jaccard_coords_chron <- data.frame(Dim1round = sort(unique(total_jaccard_coords$Dim1round), decreasing = TRUE))
+rownames(total_jaccard_coords_chron) <- seq_len(nrow(total_jaccard_coords_chron))
+total_jaccard_coords_data <- as.data.frame(table(total_jaccard_coords$Dim1round, total_jaccard_coords$specimen_treatment))
+colnames(total_jaccard_coords_data) <- c("Dim1round", "specimen_treatment", "count")
+total_jaccard_coords_data <- reshape(total_jaccard_coords_data, idvar = "Dim1round", timevar = "specimen_treatment", direction = "wide")
+total_jaccard_coords_data <- total_jaccard_coords_data[order(total_jaccard_coords_data$Dim1round, decreasing = TRUE), ]
+rownames(total_jaccard_coords_data) <- total_jaccard_coords_data$Dim1round
+total_jaccard_coords_data <- total_jaccard_coords_data[, -1]
+colnames(total_jaccard_coords_data) <- gsub("^count\\.", "", colnames(total_jaccard_coords_data))
+total_jaccard_coords_data_perc <- total_jaccard_coords_data
+total_jaccard_coords_data_perc <- t(apply(total_jaccard_coords_data_perc, 1, function(x){
+  row_sum <- sum(x)
+  if (row_sum > 0) {
+    return(x/row_sum*100)
+  } else {
+    return(rep(0, length(x)))
+  }
+}))
+total_jaccard_coords_data_perc <- as.data.frame(total_jaccard_coords_data_perc)
+colnames(total_jaccard_coords_data_perc) <- colnames(total_jaccard_coords_data)
+total_jaccard_coords_data_perc <- total_jaccard_coords_data_perc[c(1,2,4,3,5,6,7,15,16,18,17,19,20,21,8,9,11,10,12,13,14)]
+
+## generate metadata file for grouping
+specimen_id_meta <- total_unifrac_coords %>%
+  select(specimen_treatment, specimen_id) %>%
+  distinct()
+
+## generate scree plots
+total_unifrac_eigen <- data.frame(Inertia = total_unifrac_pcoa$eig / sum(total_unifrac_pcoa$eig) * 100, Axes = seq_along(total_unifrac_pcoa$eig))
+total_unifrac_scree_plot <- ggplot(data = total_unifrac_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = "identity") +
+  theme_classic() +
+  xlab("Axes") +
+  ylab("Inertia %")
+total_unifrac_scree_plot
+
+total_jaccard_eigen <- data.frame(Inertia = total_jaccard_pcoa$eig / sum(total_jaccard_pcoa$eig) * 100, Axes = seq_along(total_jaccard_pcoa$eig))
+total_jaccard_scree_plot <- ggplot(data = total_jaccard_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = "identity") +
+  theme_classic() +
+  xlab("Axes") +
+  ylab("Inertia %")
+total_jaccard_scree_plot
+
+## generate 2D ordination plots
+sample_colors <- c("centrifugation" = "#ce7c7d", "filter_1ml" = "#c4d8e1", "evaporation" = "#f2d379", "filter_10ml" = "#4e6c82", "precipitation" = "#BFB8DA", "tissue" = "grey60", "tissue_wicked" = "grey10")
+sample_shape <- c('hexactinellida' = 22, 'bryozoa' = 21, 'demospecimen' = 24)
+total_unifrac_ordi_plot <- ggplot(total_unifrac_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'top',) +
+  labs(x = paste0("PCoA Axis 1", round(total_unifrac_pcoa$eig[1] / sum(total_unifrac_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 1", round(total_unifrac_pcoa$eig[2] / sum(total_unifrac_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+total_unifrac_ordi_plot
+
+total_jaccard_ordi_plot <- ggplot(total_jaccard_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'top',) +
+  labs(x = paste0("PCoA Axis 1", round(total_jaccard_pcoa$eig[1] / sum(total_jaccard_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 1", round(total_jaccard_pcoa$eig[2] / sum(total_jaccard_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+total_jaccard_ordi_plot
+
+## generate rioja plots
+riojaPlot(total_unifrac_coords_data_perc, total_unifrac_coords_chron, groups = specimen_id_meta,
+          plot.groups = TRUE, ymin = -0.31, ymax = 0.47, y.rev = FALSE,
+          plot.poly = TRUE, plot.line = FALSE, plot.bar = FALSE,
+          scale.minmax = TRUE, plot.cumul = TRUE, srt.xlabel = 0,
+          col.group = c("lightgoldenrod", "steelblue","firebrick"),
+          ylabel = paste0('PCoA Axis 1 (', round(total_unifrac_pcoa$eig[1] / sum(total_unifrac_pcoa$eig) * 100, 2), '%)'), las.xaxis = 2,
+          xlabels = c('C', 'E', 'F1', 'F10', 'P', 'T', 'TW',
+                      'C', 'E', 'F1', 'F10', 'P', 'T', 'TW',
+                      'C', 'E', 'F1', 'F10', 'P', 'T', 'TW'))
+
+riojaPlot(total_jaccard_coords_data_perc, total_jaccard_coords_chron, groups = specimen_id_meta,
+                                      plot.groups = TRUE, ymin = -0.31, ymax = 0.47, y.rev = FALSE,
+                                      plot.poly = TRUE, plot.line = FALSE, plot.bar = FALSE,
+                                      scale.minmax = TRUE, plot.cumul = TRUE, srt.xlabel = 0,
+                                      col.group = c("lightgoldenrod", "steelblue","firebrick"),
+                                      ylabel = paste0('PCoA Axis 1 (', round(total_jaccard_pcoa$eig[1] / sum(total_jaccard_pcoa$eig) * 100, 2), '%)'), las.xaxis = 2,
+                                      xlabels = c('C', 'E', 'F1', 'F10', 'P', 'T', 'TW',
+                                                  'C', 'E', 'F1', 'F10', 'P', 'T', 'TW',
+                                                  'C', 'E', 'F1', 'F10', 'P', 'T', 'TW'))
+
+## conduct PERMANOVA, pairwiseAdonis, and PERMDISP for statistical analysis of beta-diversity
+adonis2(as.dist(total_unifrac_distance) ~ specimen_id + method + specimen_id:method, data = meta_table, permutations = 10000, by = 'terms')
+pairwise.adonis2(as.dist(total_unifrac_distance) ~ specimen_id, data = meta_table, nperm = 10000)
+pairwise.adonis2(as.dist(total_unifrac_distance) ~ method, data = meta_table, nperm = 10000)
+betadisper(as.dist(total_unifrac_distance), meta_table$specimen_id)
+permutest(betadisper(as.dist(total_unifrac_distance), meta_table$specimen_id), permutations = 10000)
+permutest(betadisper(as.dist(total_unifrac_distance), meta_table$specimen_id), permutations = 10000, pairwise = TRUE)
+boxplot(betadisper(as.dist(total_unifrac_distance), meta_table$specimen_id))
+
+adonis2(as.dist(total_jaccard_distance) ~ specimen_id + method + specimen_id:method, data = meta_table, permutations = 10000, by = 'terms')
+pairwise.adonis2(as.dist(total_jaccard_distance) ~ specimen_id, data = meta_table, nperm = 10000)
+pairwise.adonis2(as.dist(total_jaccard_distance) ~ method, data = meta_table, nperm = 10000)
+betadisper(as.dist(total_jaccard_distance), meta_table$specimen_id)
+permutest(betadisper(as.dist(total_jaccard_distance), meta_table$specimen_id), permutations = 10000)
+permutest(betadisper(as.dist(total_jaccard_distance), meta_table$specimen_id), permutations = 10000, pairwise = TRUE)
+boxplot(betadisper(as.dist(total_jaccard_distance), meta_table$specimen_id))
+
+## split data per specimen specimen
+bryozoa_meta <- meta_table[meta_table$specimen_id == 'bryozoa', ]
+bryozoa_count <- count_table[rownames(bryozoa_meta), ]
+bryozoa_phylo <- match.phylo.comm(phy = phylo_tree_clean, comm = bryozoa_count)$phy
+bryozoa_count <- match.phylo.comm(phy = bryozoa_phylo, comm = bryozoa_count)$comm
+all(bryozoa_phylo$tip.label == colnames(bryozoa_count))
+
+hexactinellida_meta <- meta_table[meta_table$specimen_id == 'hexactinellida', ]
+hexactinellida_count <- count_table[rownames(hexactinellida_meta), ]
+hexactinellida_phylo <- match.phylo.comm(phy = phylo_tree_clean, comm = hexactinellida_count)$phy
+hexactinellida_count <- match.phylo.comm(phy = hexactinellida_phylo, comm = hexactinellida_count)$comm
+all(hexactinellida_phylo$tip.label == colnames(hexactinellida_count))
+
+demospecimen_meta <- meta_table[meta_table$specimen_id == 'demospecimen', ]
+demospecimen_count <- count_table[rownames(demospecimen_meta), ]
+demospecimen_phylo <- match.phylo.comm(phy = phylo_tree_clean, comm = demospecimen_count)$phy
+demospecimen_count <- match.phylo.comm(phy = demospecimen_phylo, comm = demospecimen_count)$comm
+all(demospecimen_phylo$tip.label == colnames(demospecimen_count))
+
+## transform count table to presence-absence
+bryozoa_count_pa <- as.data.frame((bryozoa_count > 0) * 1)
+hexactinellida_count_pa <- as.data.frame((hexactinellida_count > 0) * 1)
+demospecimen_count_pa <- as.data.frame((demospecimen_count > 0) * 1)
+
+## calculate the uniFrac and Jaccard distance matrices
+bryozoa_unifrac <- unifrac(bryozoa_count_pa, bryozoa_phylo)
+bryozoa_jaccard <- vegdist(bryozoa_count_pa, method = "jaccard")
+
+hexactinellida_unifrac <- unifrac(hexactinellida_count_pa, hexactinellida_phylo)
+hexactinellida_jaccard <- vegdist(hexactinellida_count_pa, method = "jaccard")
+
+demospecimen_unifrac <- unifrac(demospecimen_count_pa, demospecimen_phylo)
+demospecimen_jaccard <- vegdist(demospecimen_count_pa, method = "jaccard")
+
+## perform PCoA ordination on both distance matrices
+bryozoa_unifrac_pcoa <- wcmdscale(as.dist(bryozoa_unifrac), eig = TRUE)
+bryozoa_jaccard_pcoa <- wcmdscale(as.dist(bryozoa_jaccard), eig = TRUE)
+
+hexactinellida_unifrac_pcoa <- wcmdscale(as.dist(hexactinellida_unifrac), eig = TRUE)
+hexactinellida_jaccard_pcoa <- wcmdscale(as.dist(hexactinellida_jaccard), eig = TRUE)
+
+demospecimen_unifrac_pcoa <- wcmdscale(as.dist(demospecimen_unifrac), eig = TRUE)
+demospecimen_jaccard_pcoa <- wcmdscale(as.dist(demospecimen_jaccard), eig = TRUE)
+
+## format data for plotting
+bryozoa_unifrac_coords <- data.frame(bryozoa_unifrac_pcoa$points[, 1:2])
+bryozoa_unifrac_coords$Sample <- rownames(bryozoa_unifrac_coords)
+bryozoa_unifrac_coords <- merge(bryozoa_unifrac_coords, bryozoa_meta, by = 'Sample', all.y = TRUE)
+
+bryozoa_jaccard_coords <- data.frame(bryozoa_jaccard_pcoa$points[, 1:2])
+bryozoa_jaccard_coords$Sample <- rownames(bryozoa_jaccard_coords)
+bryozoa_jaccard_coords <- merge(bryozoa_jaccard_coords, bryozoa_meta, by = 'Sample', all.y = TRUE)
+
+hexactinellida_unifrac_coords <- data.frame(hexactinellida_unifrac_pcoa$points[, 1:2])
+hexactinellida_unifrac_coords$Sample <- rownames(hexactinellida_unifrac_coords)
+hexactinellida_unifrac_coords <- merge(hexactinellida_unifrac_coords, hexactinellida_meta, by = 'Sample', all.y = TRUE)
+
+hexactinellida_jaccard_coords <- data.frame(hexactinellida_jaccard_pcoa$points[, 1:2])
+hexactinellida_jaccard_coords$Sample <- rownames(hexactinellida_jaccard_coords)
+hexactinellida_jaccard_coords <- merge(hexactinellida_jaccard_coords, hexactinellida_meta, by = 'Sample', all.y = TRUE)
+
+demospecimen_unifrac_coords <- data.frame(demospecimen_unifrac_pcoa$points[, 1:2])
+demospecimen_unifrac_coords$Sample <- rownames(demospecimen_unifrac_coords)
+demospecimen_unifrac_coords <- merge(demospecimen_unifrac_coords, demospecimen_meta, by = 'Sample', all.y = TRUE)
+
+demospecimen_jaccard_coords <- data.frame(demospecimen_jaccard_pcoa$points[, 1:2])
+demospecimen_jaccard_coords$Sample <- rownames(demospecimen_jaccard_coords)
+demospecimen_jaccard_coords <- merge(demospecimen_jaccard_coords, demospecimen_meta, by = 'Sample', all.y = TRUE)
+
+## generate scree plots
+bryozoa_unifrac_eigen <- data.frame(Inertia = bryozoa_unifrac_pcoa$eig / sum(bryozoa_unifrac_pcoa$eig) * 100, Axes = seq_along(bryozoa_unifrac_pcoa$eig))
+bryozoa_unifrac_scree <- ggplot(data = bryozoa_unifrac_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  xlab('Axes') +
+  ylab('Inertia %')
+bryozoa_unifrac_scree
+
+bryozoa_jaccard_eigen <- data.frame(Inertia = bryozoa_jaccard_pcoa$eig / sum(bryozoa_jaccard_pcoa$eig) * 100, Axes = seq_along(bryozoa_jaccard_pcoa$eig))
+bryozoa_jaccard_scree <- ggplot(data = bryozoa_jaccard_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  xlab('Axes') +
+  ylab('Inertia %')
+bryozoa_jaccard_scree
+
+hexactinellida_unifrac_eigen <- data.frame(Inertia = hexactinellida_unifrac_pcoa$eig / sum(hexactinellida_unifrac_pcoa$eig) * 100, Axes = seq_along(hexactinellida_unifrac_pcoa$eig))
+hexactinellida_unifrac_scree <- ggplot(data = hexactinellida_unifrac_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  xlab('Axes') +
+  ylab('Inertia %')
+hexactinellida_unifrac_scree
+
+hexactinellida_jaccard_eigen <- data.frame(Inertia = hexactinellida_jaccard_pcoa$eig / sum(hexactinellida_jaccard_pcoa$eig) * 100, Axes = seq_along(hexactinellida_jaccard_pcoa$eig))
+hexactinellida_jaccard_scree <- ggplot(data = hexactinellida_jaccard_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  xlab('Axes') +
+  ylab('Inertia %')
+hexactinellida_jaccard_scree
+
+demospecimen_unifrac_eigen <- data.frame(Inertia = demospecimen_unifrac_pcoa$eig / sum(demospecimen_unifrac_pcoa$eig) * 100, Axes = seq_along(demospecimen_unifrac_pcoa$eig))
+demospecimen_unifrac_scree <- ggplot(data = demospecimen_unifrac_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  xlab('Axes') +
+  ylab('Inertia %')
+demospecimen_unifrac_scree
+
+demospecimen_jaccard_eigen <- data.frame(Inertia = demospecimen_jaccard_pcoa$eig / sum(demospecimen_jaccard_pcoa$eig) * 100, Axes = seq_along(demospecimen_jaccard_pcoa$eig))
+demospecimen_jaccard_scree <- ggplot(data = demospecimen_jaccard_eigen, aes(x = factor(Axes), y = Inertia)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  xlab('Axes') +
+  ylab('Inertia %')
+demospecimen_jaccard_scree
+
+## generate 2D ordination plots
+bryozoa_unifrac_ordi <- ggplot(bryozoa_unifrac_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  stat_ellipse(aes(x = Dim1, y = Dim2, color = method), type = 't', linetype = 4) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none') +
+  labs(x = paste0("PCoA Axis 1 (", round(bryozoa_unifrac_pcoa$eig[1] / sum(bryozoa_unifrac_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 2 (", round(bryozoa_unifrac_pcoa$eig[2] / sum(bryozoa_unifrac_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_color_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  ylim(-1, 1) +
+  xlim(-1, 1) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+bryozoa_unifrac_ordi
+
+bryozoa_jaccard_ordi <- ggplot(bryozoa_jaccard_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  stat_ellipse(aes(x = Dim1, y = Dim2, color = method), type = 't', linetype = 4) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none') +
+  labs(x = paste0("PCoA Axis 1 (", round(bryozoa_jaccard_pcoa$eig[1] / sum(bryozoa_jaccard_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 2 (", round(bryozoa_jaccard_pcoa$eig[2] / sum(bryozoa_jaccard_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_color_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  ylim(-1, 1) +
+  xlim(-1, 1) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+bryozoa_jaccard_ordi
+
+hexactinellida_unifrac_ordi <- ggplot(hexactinellida_unifrac_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  stat_ellipse(aes(x = Dim1, y = Dim2, color = method), type = 't', linetype = 4) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none') +
+  labs(x = paste0("PCoA Axis 1 (", round(hexactinellida_unifrac_pcoa$eig[1] / sum(hexactinellida_unifrac_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 2 (", round(hexactinellida_unifrac_pcoa$eig[2] / sum(hexactinellida_unifrac_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_color_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  ylim(-1, 1) +
+  xlim(-1, 1) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+hexactinellida_unifrac_ordi
+
+hexactinellida_jaccard_ordi <- ggplot(hexactinellida_jaccard_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  stat_ellipse(aes(x = Dim1, y = Dim2, color = method), type = 't', linetype = 4) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none') +
+  labs(x = paste0("PCoA Axis 1 (", round(hexactinellida_jaccard_pcoa$eig[1] / sum(hexactinellida_jaccard_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 2 (", round(hexactinellida_jaccard_pcoa$eig[2] / sum(hexactinellida_jaccard_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_color_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  ylim(-1, 1) +
+  xlim(-1, 1) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+hexactinellida_jaccard_ordi
+
+demospecimen_unifrac_ordi <- ggplot(demospecimen_unifrac_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  stat_ellipse(aes(x = Dim1, y = Dim2, color = method), type = 't', linetype = 4) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none') +
+  labs(x = paste0("PCoA Axis 1 (", round(demospecimen_unifrac_pcoa$eig[1] / sum(demospecimen_unifrac_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 2 (", round(demospecimen_unifrac_pcoa$eig[2] / sum(demospecimen_unifrac_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_color_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  ylim(-1, 1) +
+  xlim(-1, 1) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+demospecimen_unifrac_ordi
+
+demospecimen_jaccard_ordi <- ggplot(demospecimen_jaccard_coords, aes(x = Dim1, y = Dim2, shape = specimen_id, fill = method)) +
+  geom_point(aes(shape = specimen_id, fill = method), size = 3) +
+  stat_ellipse(aes(x = Dim1, y = Dim2, color = method), type = 't', linetype = 4) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = 'none') +
+  labs(x = paste0("PCoA Axis 1 (", round(demospecimen_jaccard_pcoa$eig[1] / sum(demospecimen_jaccard_pcoa$eig) * 100, 2), '%)'),
+       y = paste0("PCoA Axis 2 (", round(demospecimen_jaccard_pcoa$eig[2] / sum(demospecimen_jaccard_pcoa$eig) * 100, 2), '%)')) +
+  scale_fill_manual(values = sample_colors) +
+  scale_color_manual(values = sample_colors) +
+  scale_shape_manual(values = sample_shape) +
+  ylim(-1, 1) +
+  xlim(-1, 1) +
+  guides(fill = guide_legend(override.aes = list(shape = 21)), shape = guide_legend(override.aes = list(fill = "white")))
+demospecimen_jaccard_ordi
+
+## conduct PERMANOVA, pairwiseAdonis, and PERMDISP for statistical analysis of beta-diversity
+adonis2(as.dist(bryozoa_unifrac) ~ method, data = bryozoa_meta, permutations = 10000, by = 'terms')
+pairwise.adonis2(as.dist(bryozoa_unifrac) ~ method, data = bryozoa_meta, nperm = 10000)
+betadisper(as.dist(bryozoa_unifrac), bryozoa_meta$method)
+permutest(betadisper(as.dist(bryozoa_unifrac), bryozoa_meta$method), permutations = 10000)
+permutest(betadisper(as.dist(bryozoa_unifrac), bryozoa_meta$method), permutations = 10000, pairwise = TRUE)
+boxplot(betadisper(as.dist(bryozoa_unifrac), bryozoa_meta$method))
+
+adonis2(as.dist(hexactinellida_unifrac) ~ method, data = hexactinellida_meta, permutations = 10000, by = 'terms')
+pairwise.adonis2(as.dist(hexactinellida_unifrac) ~ method, data = hexactinellida_meta, nperm = 10000)
+betadisper(as.dist(hexactinellida_unifrac), hexactinellida_meta$method)
+permutest(betadisper(as.dist(hexactinellida_unifrac), hexactinellida_meta$method), permutations = 10000)
+permutest(betadisper(as.dist(hexactinellida_unifrac), hexactinellida_meta$method), permutations = 10000, pairwise = TRUE)
+boxplot(betadisper(as.dist(hexactinellida_unifrac), hexactinellida_meta$method))
+
+adonis2(as.dist(demospecimen_unifrac) ~ method, data = demospecimen_meta, permutations = 10000, by = 'terms')
+pairwise.adonis2(as.dist(demospecimen_unifrac) ~ method, data = demospecimen_meta, nperm = 10000)
+betadisper(as.dist(demospecimen_unifrac), demospecimen_meta$method)
+permutest(betadisper(as.dist(demospecimen_unifrac), demospecimen_meta$method), permutations = 10000)
+permutest(betadisper(as.dist(demospecimen_unifrac), demospecimen_meta$method), permutations = 10000, pairwise = TRUE)
+boxplot(betadisper(as.dist(demospecimen_unifrac), demospecimen_meta$method))
+
+## put all plots together
+ggarrange(bryozoa_unifrac_ordi, hexactinellida_unifrac_ordi, demospecimen_unifrac_ordi, ncol = 3, labels = c('b', 'c', 'd'))
+```
+
+```{code-block} R
+## prepare R environment
+rm(list = ls())
+setwd("/Volumes/LaCie/2022_Marsden/objective_1/ethanolComparison")
+required.libraries <- c("rpart", "party", "randomForest", "caret")
+lapply(required.libraries, require, character.only = TRUE)
+
+## read data into R
+count_table <- as.data.frame(t(read.table('10.final/clean_contaminant_removed_tombRaider_ethanol_comparison_heDNA_table.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')))
+meta_table <- read.table('10.final/clean_contaminant_removed_ethanol_comparison_heDNA_metadata.txt', header = TRUE, row.names = 1, sep = '\t', check.names = FALSE, comment.char = '')
+
+## parse data for analysis
+count_table_pa <- as.data.frame((count_table > 0) * 1)
+count_meta <- merge(meta_table, count_table_pa, by.x = 'row.names', by.y = 'row.names', all.y = TRUE)
+
+count_meta_bryozoa <- count_meta[count_meta$specimen_id == 'bryozoa', ]
+count_meta_bryozoa <- count_meta_bryozoa[c(4,4 + which(colSums(count_meta_bryozoa[-(1:4)]) != 0))]
+count_meta_bryozoa$method <- as.factor(count_meta_bryozoa$method)
+
+count_meta_hexactinellida <- count_meta[count_meta$specimen_id == 'hexactinellida', ]
+count_meta_hexactinellida <- count_meta_hexactinellida[c(4,4 + which(colSums(count_meta_hexactinellida[-(1:4)]) != 0))]
+count_meta_hexactinellida$method <- as.factor(count_meta_hexactinellida$method)
+
+count_meta_demospecimen <- count_meta[count_meta$specimen_id == 'demospecimen', ]
+count_meta_demospecimen <- count_meta_demospecimen[c(4,4 + which(colSums(count_meta_demospecimen[-(1:4)]) != 0))]
+count_meta_demospecimen$method <- as.factor(count_meta_demospecimen$method)
+
+## run statistical CART for visualisation
+bryozoa_ct <- ctree(method ~ ., data = count_meta_bryozoa)
+bryozoa_ct
+plot(bryozoa_ct)
+
+hexactinellida_ct <- ctree(method ~ ., data = count_meta_hexactinellida)
+hexactinellida_ct
+plot(hexactinellida_ct)
+
+demospecimen_ct <- ctree(method ~ ., data = count_meta_demospecimen)
+demospecimen_ct
+plot(demospecimen_ct)
+
+## conduct random forest analysis
+(rf_bryozoa <- randomForest(method ~ ., data = count_meta_bryozoa))
+plot(rf_bryozoa)
+train(method ~ ., data = count_meta_bryozoa, method = 'rf')
+update(rf_bryozoa, mtry = 10, ntree = 10000)
+plot(rf_bryozoa)
+importance(rf_bryozoa)
+partialPlot(rf_bryozoa, count_meta_bryozoa, "asv.1")
+
+(rf_hexactinellida <- randomForest(method ~ ., data = count_meta_hexactinellida))
+plot(rf_hexactinellida)
+train(method ~ ., data = count_meta_hexactinellida, method = 'rf')
+update(rf_hexactinellida, mtry = 14, ntree = 10000)
+plot(rf_hexactinellida)
+importance(rf_hexactinellida)
+partialPlot(rf_hexactinellida, count_meta_hexactinellida, "asv.20")
+
+(rf_demospecimen <- randomForest(method ~ ., data = count_meta_demospecimen))
+plot(rf_demospecimen)
+train(method ~ ., data = count_meta_demospecimen, method = 'rf')
+update(rf_demospecimen, mtry = 16, ntree = 10000)
+plot(rf_demospecimen)
+importance(rf_demospecimen)
+partialPlot(rf_demospecimen, count_meta_demospecimen, "asv.13")
+
+## conduct analysis on full data to classify specimen specimens
+count_meta <- count_meta[, -c(1,2,4)]
+count_meta$specimen_id <- as.factor(count_meta$specimen_id)
+
+full_ct <- ctree(specimen_id ~ ., data = count_meta)
+full_ct
+plot(full_ct)
+
+(rf_full <- randomForest(specimen_id ~ ., data = count_meta))
+plot(rf_full)
+train(specimen_id ~ ., data = count_meta, method = 'rf')
+update(rf_full, mtry = 2, ntree = 100000)
+plot(rf_full)
+importance_full <- as.data.frame(importance(rf_full))
+importance_full$Feature <- rownames(importance_full)
+importance_full <- importance_full[order(importance_full$MeanDecreaseGini, decreasing = TRUE), ]
+partialPlot(rf_full, count_meta, "asv.4")
+```
 
 ## 9. Map of Antarctica
 
@@ -1607,13 +2099,13 @@ library(scales)
 # read data
 ATAshp <- simplifyGeom(vect("add_coastline_high_res_polygon_v7.2/add_coastline_high_res_polygon_v7.2.shp"), tolerance=500)
 ATAshp$col <- sapply(ATAshp$surface, function(x){ifelse(x == "land", "grey85", "grey98")})
-sponge_dat <- read.csv("specimen_metadata2.csv")
-sponge_pts <- project(vect(sponge_dat, geom = c("Longitude1", "Latitude1"), keepgeom = TRUE, crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"), ATAshp)
+specimen_dat <- read.csv("specimen_metadata2.csv")
+specimen_pts <- project(vect(specimen_dat, geom = c("Longitude1", "Latitude1"), keepgeom = TRUE, crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"), ATAshp)
 grat <- project(vect(sf::st_graticule(lon=seq(-175, 180, 5), lat = seq(-85, -60, 5), ndiscr = 5000)), ATAshp)
 ibsco <- rast("add_coastline_high_res_polygon_v7.2/IBCSO_v2_ice-surface.nc")
-sample_colors <- c("clionaida" = "lightgoldenrod", "Demospongiae" = "steelblue", "Hexactinellida" = "firebrick")
-spp_names <- c(expression(italic("clionaida")), expression(italic("Demospongiae")), expression(italic("Hexactinellida")))
-sponge_pts$Catalog.Number <- as.factor(sponge_pts$Catalog.Number)
+sample_colors <- c("bryozoa" = "lightgoldenrod", "Demospongiae" = "steelblue", "Hexactinellida" = "firebrick")
+spp_names <- c(expression(italic("bryozoa")), expression(italic("Demospongiae")), expression(italic("Hexactinellida")))
+specimen_pts$Catalog.Number <- as.factor(specimen_pts$Catalog.Number)
 xmn <- -1000000
 xmx <- 1500000
 ymn <- -2500000
@@ -1639,8 +2131,8 @@ RSR_plot <- ggplot() +
   geom_spatvector(data = grat, col = "grey50", alpha = 0.2) + 
   geom_spatvector(data = ATAshp, alpha = 1, fill = ATAshp$col, col = 'grey20') + 
   new_scale_fill() + 
-  geom_spatvector(data = sponge_pts, aes(shape = Class, fill = Class), alpha = 1, size = 5, stroke = 0.5) + 
-  scale_fill_manual(values = sample_colors, labels = c("clionaida", "Demospongiae", "Hexactinellida") , name = "Sponge Class") +
+  geom_spatvector(data = specimen_pts, aes(shape = Class, fill = Class), alpha = 1, size = 5, stroke = 0.5) + 
+  scale_fill_manual(values = sample_colors, labels = c("bryozoa", "Demospongiae", "Hexactinellida") , name = "specimen Class") +
   guides(fill = guide_legend(override.aes = list(pch=21))) + 
   scale_shape_manual(values = c(21, 22, 23)) + 
   scale_x_continuous(breaks = seq(-180, 180, by = 10)) + 
@@ -1654,7 +2146,7 @@ inset_map <- ggplot() +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank(), panel.background = element_blank(), plot.background = element_blank(), panel.border = element_blank(), axis.line = element_blank(), axis.text.x = element_blank(), axis.text.y = element_blank(), axis.ticks = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), plot.title = element_blank()) 
 
 #output to pdf
-pdf("RSR_spongemap_v2.pdf", width = 8, height = 5.5) 
+pdf("RSR_specimenmap_v2.pdf", width = 8, height = 5.5) 
 RSR_plot + annotation_custom(ggplotGrob(inset_map), xmin = xmx - (xmx-xmn)/3, xmax = xmx, ymin = ymx - (ymx-ymn)/3, ymax = ymx + 280000) 
 dev.off() 
 ```
