@@ -6,7 +6,7 @@ This GitHub repository serves as a comprehensive guide for the bioinformatic and
 
 ## 2. Experimental design
 
-The primary objective of this experiment is to assess the possibility of non-destructive heDNA recovery from museum-stored marine sponge specimens through DNA extraction from the ethanol in which specimens are stored. To verify non-destructive sampling as a suitable methodological choice for specimens across the phylum Porifera, we selected specimens from the two major classes due to differing internal skeletal structures, including Hexactinellida (hexagonal silica spicules) and Demospongiae (spongin). A detailed list with metadata for each specimen can be found below.
+The primary objective of the experiment is to assess the possibility of non-destructive heDNA recovery from museum-stored marine sponge specimens through DNA extraction from the ethanol in which specimens are stored. To verify non-destructive sampling as a suitable methodological choice for specimens across the phylum Porifera, we selected specimens from the two major classes due to differing internal skeletal structures, including Hexactinellida (hexagonal silica spicules) and Demospongiae (spongin). A detailed list with metadata for each specimen can be found below.
 
 | Cat. # | Class | Species | Date | Latitude | Longitude | Depth |
 | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
